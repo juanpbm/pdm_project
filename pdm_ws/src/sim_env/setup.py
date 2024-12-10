@@ -1,6 +1,22 @@
 from setuptools import find_packages, setup
+from setuptools.command.install import install
+import subprocess
+import glob
+import os
 
 package_name = 'sim_env'
+
+class InstallGymEnvsUrdf(install):
+    def run(self):
+        subprocess.check_call(['pip3', 'install', 'urdfenvs'])
+        subprocess.check_call(['pip3', 'install', '-e', './sim_env/include/gym_envs_urdf/'])
+        subprocess.check_call(['pip3', 'install', 'keyboard'])
+        install.run(self)
+
+gym_envs_urdf_files = [
+    file for file in glob.glob('sim_env/include/gym_envs_urdf/**/*', recursive=True)
+    if os.path.isfile(file)  # Ensure only files are included
+]
 
 setup(
     name=package_name,
@@ -10,8 +26,9 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/gym_envs_urdf', gym_envs_urdf_files),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'urdfenvs', 'keyboard'],
     zip_safe=True,
     maintainer='juaber',
     maintainer_email='jbernalmedina@tudelft.nl',
@@ -22,4 +39,5 @@ setup(
         'console_scripts': [
         ],
     },
+    cmdclass={'install': InstallGymEnvsUrdf},
 )

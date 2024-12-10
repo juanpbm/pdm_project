@@ -3,9 +3,12 @@
 <package format="3">
   <name>sim_env</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Package containig the simulation enviroment for the PDM project</description>
   <maintainer email="jbernalmedina@tudelft.nl">juaber</maintainer>
   <license>Apache-2.0</license>
+
+  <depend>urdfenvs</depend>
+  <depend>keyboard</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
