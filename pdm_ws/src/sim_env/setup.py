@@ -21,7 +21,7 @@ gym_envs_urdf_files = [
 setup(
     name=package_name,
     version='0.0.0',
-    packages=find_packages(exclude=['test']),
+    packages=find_packages(exclude=['test'], include=['sim_env', 'sim_env.*']),
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -37,6 +37,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'panda_env = sim_env.src.env_node:main',
         ],
     },
     cmdclass={'install': InstallGymEnvsUrdf},
