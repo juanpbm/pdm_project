@@ -7,8 +7,6 @@
   <maintainer email="jbernalmedina@tudelft.nl">juaber</maintainer>
   <license>Apache-2.0</license>
 
-  <depend>urdfenvs</depend>
-  <depend>keyboard</depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
 
