@@ -8,6 +8,8 @@ package_name = 'sim_env'
 
 class InstallGymEnvsUrdf(install):
     def run(self):
+        # TODO: Check if this is the best way to do this. 
+        subprocess.check_call(['git', 'submodule', 'update', '--init', '--recursive'])
         subprocess.check_call(['pip3', 'install', 'urdfenvs'])
         subprocess.check_call(['pip3', 'install', '-e', './sim_env/include/gym_envs_urdf/'])
         subprocess.check_call(['pip3', 'install', 'keyboard'])
