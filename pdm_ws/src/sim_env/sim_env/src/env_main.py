@@ -15,5 +15,5 @@ if __name__ == "__main__":
         # Define state machine
         # Define robot_env and 
         # Use node to perform actions 
-        # albert_sym = Albert_sym(render=True)
-        # albert_sym.move()
+        albert_sym = Albert_sym(render=True)
+        albert_sym.move()

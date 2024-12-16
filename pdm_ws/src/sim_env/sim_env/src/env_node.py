@@ -22,12 +22,12 @@ class PandaEnvNode(Node):
         self.get_logger().info('Got in panda_env Node sub: "%s"' % msg.data)
 
         # act on received command
+        # get new info to publish 
 
         msg_new = String()
         msg_new.data = 'panda env has acted on cmd_vel '
         self.publisher_.publish(msg_new)
         self.get_logger().info('Publishing from panda_env Node: "%s"' % msg_new.data)
-        rclpy.shutdown()
 
     #Functions that use the env class
 
