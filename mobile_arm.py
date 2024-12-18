@@ -5,7 +5,8 @@ from urdfenvs.urdf_common.urdf_env import UrdfEnv
 
 arm_joints= [3,4,5,6,7,8,9,10,11]
 velocity_limit=2.5
-
+"This is the target xyz that the robot should receive to move the arm to that position"
+target_xyz = np.array([0.6, 0, 0.5])
 
 def revolute_transform(axis, angle):
     """Compute the rotation matrix for a revolute joint."""
@@ -89,7 +90,7 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
 
     print(np.round(current_xyz))
     history = []
-    target_xyz = np.array([0.8, 0, 0.5])
+    actions_to_send=np.zeros(env.n())
     max_velocity = 0.5
     for i in range(n_steps):
         if (np.linalg.norm(target_xyz - current_xyz) > 0.01): 
@@ -105,20 +106,16 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
 
             joint_velocities = np.linalg.pinv(J) @ desired_velocity # Use pseudoinverse to solve
 
-       
-            for x in range(len(joints)-2):
-                # print("X.",x)
-                action[x+3]=joint_velocities[x]
-                
-
-           
-            
+            actions_to_send=joint_velocities
             
         else:
-            for x in range(len(joints)-2):
-               
-                action[x+3]=0
 
+            actions_to_send=np.zeros(env.n())
+            
+        "These are the instructions to move the arm"
+        for x in range(len(joints)-2):      
+                action[x+3]=actions_to_send[x]
+        "This what moves the arm"
         ob, *_ = env.step(action) 
         current_xyz = compute_forward_kinematics(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))   
         history.append(ob)
