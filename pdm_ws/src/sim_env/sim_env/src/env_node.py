@@ -1,6 +1,9 @@
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from sim_env.src.robot_env import Albert_sym
+import warnings
+import gymnasium as gym
 
 from std_msgs.msg import String
 
@@ -15,7 +18,7 @@ class PandaEnvNode(Node):
             10)
 
         # TODO: what other information or topics are needed?
-        print("motion_planner Node has been created.")
+        print("panda env Node has been created.")
 
 
     def cmd_callback(self, msg):
@@ -37,7 +40,8 @@ def main(args=None):
         rclpy.init(args=args)
         panda_env_node = PandaEnvNode()
 
-        rclpy.spin(panda_env_node)
+        albert_sym = Albert_sym(render=True)
+        albert_sym.move()
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:

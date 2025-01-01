@@ -7,6 +7,10 @@
   <maintainer email="jbernalmedina@tudelft.nl">juaber</maintainer>
   <license>Apache-2.0</license>
 
+  <exec_depend>gymnasium</exec_depend>
+  <exec_depend>urdfenvs</exec_depend>
+  <exec_depend>gymnasium</exec_depend>
+  <exec_depend>warnings</exec_depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
 
