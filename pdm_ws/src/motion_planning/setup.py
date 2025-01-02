@@ -11,13 +11,13 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'rclpy', 'sim_env'],
     zip_safe=True,
     maintainer='juaber',
     maintainer_email='jbernalmedina@tudelft.nl',
     description='Package for the Motion Planing computations',
     license='Apache-2.0',
-    tests_require=['pytest'],
+    # tests_require=['pytest'],
     entry_points={
         'console_scripts':[
             'motion_planner = motion_planning.src.motion_planner_node:main',

@@ -1,13 +1,13 @@
 import warnings
 import gymnasium as gym
 import numpy as np
-from urdfenvs.robots.generic_urdf.generic_diff_drive_robot import GenericDiffDriveRobot
+from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
 from mpscenes.obstacles.box_obstacle import BoxObstacle
 from multiprocessing import Process, Pipe
 from mpscenes.obstacles.sphere_obstacle import SphereObstacle
 
-class Albert_sym:
+class Panda_Sym:
     def __init__(self, render=True,
                  albert_pos=np.array([0.0, 0.0, 0.0]),
                  boundary_size=10, 
@@ -30,42 +30,35 @@ class Albert_sym:
             self.env.close()
 
     def Gen_Env(self):
-        self.Gen_Albert(self.albert_pos)
-        self.Gen_Boundary()
-        self.Gen_Rooms()
-        self.Gen_Room_Obstacles()
-        self.Gen_Shelf()
-        self.env = UrdfEnv(dt=0.01, robots=self.albert_robot, render=self.render)
+        self.Gen_Panda()
+        # self.Gen_Boundary()
+        # self.Gen_Rooms()
+        # self.Gen_Room_Obstacles()
+        # self.Gen_Shelf()
+        self.env = UrdfEnv(dt=0.01, robots=self.panda_robot, render=self.render, num_sub_steps=200,)
 
-        for wall in self.boundary_walls:
-            self.env.add_obstacle(wall)
-        for wall in self.room1_walls:
-            self.env.add_obstacle(wall)
-        for wall in self.room2_walls:
-            self.env.add_obstacle(wall)
-        self.env.add_obstacle(self.obstacle_room1)
-        self.env.add_obstacle(self.sphereObst1)
-        self.env.add_obstacle(self.shelf1)
-        self.env.add_obstacle(self.shelf2)
-        self.env.add_obstacle(self.shelf3)
-        self.env.add_obstacle(self.shelf4)
-        self.env.add_obstacle(self.shelf5)
-        self.env.add_obstacle(self.shelf6)
-        ob = self.env.reset(
-            pos=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0, 0]))
+        # for wall in self.boundary_walls:
+        #     self.env.add_obstacle(wall)
+        # for wall in self.room1_walls:
+        #     self.env.add_obstacle(wall)
+        # for wall in self.room2_walls:
+        #     self.env.add_obstacle(wall)
+        # self.env.add_obstacle(self.obstacle_room1)
+        # self.env.add_obstacle(self.sphereObst1)
+        # self.env.add_obstacle(self.shelf1)
+        # self.env.add_obstacle(self.shelf2)
+        # self.env.add_obstacle(self.shelf3)
+        # self.env.add_obstacle(self.shelf4)
+        # self.env.add_obstacle(self.shelf5)
+        # self.env.add_obstacle(self.shelf6)
+        action = np.zeros(self.env.n())
+        self.ob = self.env.reset()
+        self.ob, *_ = self.env.step(action) 
 
-    def Gen_Albert(self, albert_pos):
-        self.albert_robot = [GenericDiffDriveRobot(
-                 urdf="albert.urdf",
-                 mode="vel",
-                 actuated_wheels=["wheel_right_joint", "wheel_left_joint"],
-                 castor_wheels=["rotacastor_right_joint", "rotacastor_left_joint"],
-                 wheel_radius = 0.08,
-                 wheel_distance = 0.494,
-                 spawn_offset = albert_pos,
-                 spawn_rotation = 0,
-                 facing_direction = '-y',
-                 )]
+    def Gen_Panda(self):
+        self.panda_robot = [
+            GenericUrdfReacher(urdf="mobilePanda_with_gripper.urdf", mode="vel"),
+        ]
     
     def Gen_Boundary(self):
 
@@ -368,9 +361,13 @@ class Albert_sym:
                     'width': 3 , 'height': self.height, 'length': self.obstacle_size
                 },
             }))
-        
+    
+    def Get_Ob(self):
+        return self.ob
+    
     def move(self):
-        ob = self.env.reset(
+
+        self.ob = self.env.reset(
             pos=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0, 0.0])
         )
         print(f"Initial observation : {ob}")
@@ -408,8 +405,107 @@ class Albert_sym:
             else:
                 print('continue')
             print(action)
-            ob, *_ = self.env.step(action)
-            history.append(ob)
+            self.ob, *_ = self.env.step(action)
+            history.append(self.ob)
         self.env.close()
         return history
 
+    def move_panda(self, action):
+        self.ob, *_ = self.env.step(action)
+
+    # def move_panda(self, n_steps=10000, render=False, goal=True, obstacles=True):
+
+    #     action = np.zeros(self.env.n())
+    #     # action[0] = 0.1
+    #     # action[1] = 0.1
+    #     # action[3] = 1
+    #     # action[1] = 0.1
+    #     # action[arm_joints[7]] = 1
+    #     # action[arm_joints[5]]=0
+    #     ob = self.env.reset()
+    #     print(f"Initial observation : {ob}")
+    #     urdf_path="/home/jose/anaconda3/envs/PDM/lib/python3.10/site-packages/robotmodels/mobilePanda/urdf/mobilePanda_with_gripper.urdf"
+    #     robot = URDF.load(urdf_path)
+        
+    #     range_joints=range(len(robot.actuated_joints)-3)
+    #     joints=[]
+    #     print(robot.actuated_joints[0])
+    #     for x in range_joints:
+    #         print("X.",x)
+    #         joint=robot.actuated_joints[x+3]
+    #         joints.append(joint)
+    #         # joint_type = joints[x].joint_type
+    #         # joint_limits = joints[x].limit
+    #         # print(f"{joints[x].name:<20} {joint_type:<15} {x:<10}")
+    #         # print(f"Lower Limit: {joint_limits.lower:<15} Upper Limit: {joint_limits.upper:<10}")
+    #         # print(np.round(joints[x].origin,5))
+
+    #     ob, *_ = self.env.step(action) 
+    #     print(np.round(ob['robot_0']['joint_state']['position'],2))
+    #     print(np.round(ob['robot_0']['joint_state']['position'][3:-2],4))
+    #     current_xyz=compute_forward_kinematics(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))
+    #     print("End Position")
+    #     print(np.round(current_xyz))
+    #     ja=compute_jacobian(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4), current_xyz)
+    #     print("Jacobian")
+    #     print(ja)
+    #     robot.show()
+    #     history = []
+    #     target_xyz = np.array([0.8, 0, 0.5])
+    #     max_velocity = 0.5
+    #     # print(f"Intial velocity: {ob['robot_0']['joint_state']['velocity']}")
+    #     for i in range(n_steps):
+    #         # if (int(i / 100)) % 2 == 0:
+    #         #     action[11] = -0.01
+    #         #     action[10] = -0.01
+    #         # else:
+    #         #     action[11] = 0.01
+    #         #     action[10] = 0.01
+    #         if (np.linalg.norm(target_xyz - current_xyz) > 0.01):  # Loop until close to target
+    #             # Step 1: Compute desired Cartesian velocity (proportional control for simplicity)
+    #             error_xyz = target_xyz - current_xyz
+    #             desired_velocity_xyz = 1.0 * error_xyz  # Proportional gain (1.0)
+
+    #             if np.linalg.norm(desired_velocity_xyz) > max_velocity:
+    #                 desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * max_velocity
+    #             desired_velocity = np.hstack((desired_velocity_xyz, np.zeros(3))) 
+    #             # Step 2: Compute Jacobian at current joint positions
+    #             J= compute_jacobian(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4), current_xyz)
+
+    #             # Step 3: Compute joint velocities
+    #             print("Jacobian")
+    #             print(J)
+    #             print("Error")
+    #             print(desired_velocity)
+    #             joint_velocities = np.linalg.pinv(J) @ desired_velocity # Use pseudoinverse to solve
+
+    #             # Step 4: Send joint velocities to the robot
+    #             for x in range(len(joints)-2):
+    #                 # print("X.",x)
+    #                 action[x+3]=joint_velocities[x]
+                    
+
+    #             # Step 5: Update current joint positions and end-effector position
+                
+                
+    #         else:
+    #             for x in range(len(joints)-2):
+    #                 # print("X.",x)
+    #                 action[x+3]=0
+
+    #         ob, *_ = env.step(action) 
+    #         current_xyz = compute_forward_kinematics(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))  # FK to get xyz    
+    #         # for x in range(len(action)):
+    #         #     if (np.abs(np.round(ob['robot_0']['joint_state']['velocity'][x],4)) > 0.1):
+    #         #         action[x]=-ob['robot_0']['joint_state']['velocity'][x]
+    #         #     else:
+    #         #         action[x]=0
+    #         # print(f"Velocity: {np.round(ob['robot_0']['joint_state']['position'],2)}")
+    #         # if (ob['robot_0']['joint_state']['velocity'][arm_joints[0]]>0.5):
+    #         #     action[arm_joints[0]] = 0.0
+    #         history.append(ob)
+    #     env.close()
+
+        
+
+        # return history

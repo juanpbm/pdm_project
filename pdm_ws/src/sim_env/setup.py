@@ -11,6 +11,7 @@ class InstallGymEnvsUrdf(install):
         # TODO: Check if this is the best way to do this. 
         subprocess.check_call(['git', 'submodule', 'update', '--init', '--recursive'])
         subprocess.check_call(['pip3', 'install', 'urdfenvs'])
+        subprocess.check_call(['pip3', 'install', 'urdfpy'])
         subprocess.check_call(['pip3', 'install', '-e', './sim_env/include/gym_envs_urdf/'])
         subprocess.check_call(['pip3', 'install', 'keyboard'])
         install.run(self)
@@ -36,7 +37,7 @@ setup(
     maintainer_email='jbernalmedina@tudelft.nl',
     description='TODO: Package description',
     license='Apache-2.0',
-    tests_require=['pytest'],
+    # tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'panda_env = sim_env.src.env_node:main',

@@ -17,7 +17,7 @@ setup(
     maintainer_email='jbernalmedina@tudelft.nl',
     description='Package used for the Control computations',
     license='Apache-2.0',
-    tests_require=['pytest'],
+    # tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'control = control.src.control_node:main'
