@@ -26,17 +26,18 @@ class MotionPlannerNode(Node):
 
         # TODO: compute trajectory
 
-        target_xyz = np.array([[1, 1, 0], [2, 2, 0], [1, 2, 0], [0, 0, 0]], dtype=float)
-        msg = Float64MultiArray()
+        # Dummy trajectory. the computed trajectory should return something similar
+        target_xyz = np.array([[1, 1, 0], [2, 2, 0], [1, 2, 0], [0, 0, 0]], dtype=float) 
 
-        # Flatten the array and assign to data
+        # Create array message with the trajectory information
+        msg = Float64MultiArray()
         msg.data = target_xyz.flatten().tolist()
         assert all(isinstance(val, float) for val in msg.data), "All elements must be floats"
-
         # Define dimensions
         msg.layout.dim.append(MultiArrayDimension(label='rows', size=target_xyz.shape[0], stride=target_xyz.shape[1] * target_xyz.shape[0]))
         msg.layout.dim.append(MultiArrayDimension(label='cols', size=target_xyz.shape[1], stride=target_xyz.shape[1]))
 
+        # Publish Trajectory 
         self.trajectory_publisher_.publish(msg)
         self.get_logger().info("Published target_xyz array.")
 

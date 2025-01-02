@@ -4,7 +4,6 @@ import numpy as np
 from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
 from mpscenes.obstacles.box_obstacle import BoxObstacle
-from multiprocessing import Process, Pipe
 from mpscenes.obstacles.sphere_obstacle import SphereObstacle
 
 class Panda_Sym:
@@ -363,149 +362,9 @@ class Panda_Sym:
             }))
     
     def Get_Ob(self):
+        # Get Current position
         return self.ob
-    
-    def move(self):
-
-        self.ob = self.env.reset(
-            pos=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0, 0.0])
-        )
-        print(f"Initial observation : {ob}")
-        history = []
-        action = np.zeros(self.env.n())
-        while(True):
-            
-            x = input()
-            if (x == 'w'):
-                action[0] += 1
-            elif (x == 's'):
-                action[0] += -1
-            elif (x == 'd'):
-                action[1] += 1 
-            elif (x == 'a'):
-                action[1] += -1
-            elif (x == 'e'):
-                action[2] = 1
-            elif (x == 'r'):
-                action[3] = 1
-            elif (x == 't'):
-                action[4] = 1
-            elif (x == 'y'):
-                action[5] = 1
-            elif (x == 'u'):
-                action[6] = 1
-            elif (x == 'i'):
-                action[7] = 1
-            elif (x == 'o'):
-                action[8] = 1
-            elif (x == 'p'):
-                action[9] = 1
-            elif (x == 'q'):
-                break
-            else:
-                print('continue')
-            print(action)
-            self.ob, *_ = self.env.step(action)
-            history.append(self.ob)
-        self.env.close()
-        return history
 
     def move_panda(self, action):
+        # Move Robot
         self.ob, *_ = self.env.step(action)
-
-    # def move_panda(self, n_steps=10000, render=False, goal=True, obstacles=True):
-
-    #     action = np.zeros(self.env.n())
-    #     # action[0] = 0.1
-    #     # action[1] = 0.1
-    #     # action[3] = 1
-    #     # action[1] = 0.1
-    #     # action[arm_joints[7]] = 1
-    #     # action[arm_joints[5]]=0
-    #     ob = self.env.reset()
-    #     print(f"Initial observation : {ob}")
-    #     urdf_path="/home/jose/anaconda3/envs/PDM/lib/python3.10/site-packages/robotmodels/mobilePanda/urdf/mobilePanda_with_gripper.urdf"
-    #     robot = URDF.load(urdf_path)
-        
-    #     range_joints=range(len(robot.actuated_joints)-3)
-    #     joints=[]
-    #     print(robot.actuated_joints[0])
-    #     for x in range_joints:
-    #         print("X.",x)
-    #         joint=robot.actuated_joints[x+3]
-    #         joints.append(joint)
-    #         # joint_type = joints[x].joint_type
-    #         # joint_limits = joints[x].limit
-    #         # print(f"{joints[x].name:<20} {joint_type:<15} {x:<10}")
-    #         # print(f"Lower Limit: {joint_limits.lower:<15} Upper Limit: {joint_limits.upper:<10}")
-    #         # print(np.round(joints[x].origin,5))
-
-    #     ob, *_ = self.env.step(action) 
-    #     print(np.round(ob['robot_0']['joint_state']['position'],2))
-    #     print(np.round(ob['robot_0']['joint_state']['position'][3:-2],4))
-    #     current_xyz=compute_forward_kinematics(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))
-    #     print("End Position")
-    #     print(np.round(current_xyz))
-    #     ja=compute_jacobian(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4), current_xyz)
-    #     print("Jacobian")
-    #     print(ja)
-    #     robot.show()
-    #     history = []
-    #     target_xyz = np.array([0.8, 0, 0.5])
-    #     max_velocity = 0.5
-    #     # print(f"Intial velocity: {ob['robot_0']['joint_state']['velocity']}")
-    #     for i in range(n_steps):
-    #         # if (int(i / 100)) % 2 == 0:
-    #         #     action[11] = -0.01
-    #         #     action[10] = -0.01
-    #         # else:
-    #         #     action[11] = 0.01
-    #         #     action[10] = 0.01
-    #         if (np.linalg.norm(target_xyz - current_xyz) > 0.01):  # Loop until close to target
-    #             # Step 1: Compute desired Cartesian velocity (proportional control for simplicity)
-    #             error_xyz = target_xyz - current_xyz
-    #             desired_velocity_xyz = 1.0 * error_xyz  # Proportional gain (1.0)
-
-    #             if np.linalg.norm(desired_velocity_xyz) > max_velocity:
-    #                 desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * max_velocity
-    #             desired_velocity = np.hstack((desired_velocity_xyz, np.zeros(3))) 
-    #             # Step 2: Compute Jacobian at current joint positions
-    #             J= compute_jacobian(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4), current_xyz)
-
-    #             # Step 3: Compute joint velocities
-    #             print("Jacobian")
-    #             print(J)
-    #             print("Error")
-    #             print(desired_velocity)
-    #             joint_velocities = np.linalg.pinv(J) @ desired_velocity # Use pseudoinverse to solve
-
-    #             # Step 4: Send joint velocities to the robot
-    #             for x in range(len(joints)-2):
-    #                 # print("X.",x)
-    #                 action[x+3]=joint_velocities[x]
-                    
-
-    #             # Step 5: Update current joint positions and end-effector position
-                
-                
-    #         else:
-    #             for x in range(len(joints)-2):
-    #                 # print("X.",x)
-    #                 action[x+3]=0
-
-    #         ob, *_ = env.step(action) 
-    #         current_xyz = compute_forward_kinematics(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))  # FK to get xyz    
-    #         # for x in range(len(action)):
-    #         #     if (np.abs(np.round(ob['robot_0']['joint_state']['velocity'][x],4)) > 0.1):
-    #         #         action[x]=-ob['robot_0']['joint_state']['velocity'][x]
-    #         #     else:
-    #         #         action[x]=0
-    #         # print(f"Velocity: {np.round(ob['robot_0']['joint_state']['position'],2)}")
-    #         # if (ob['robot_0']['joint_state']['velocity'][arm_joints[0]]>0.5):
-    #         #     action[arm_joints[0]] = 0.0
-    #         history.append(ob)
-    #     env.close()
-
-        
-
-        # return history

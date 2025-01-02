@@ -3,8 +3,6 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 import numpy as np
-from urdfenvs.robots.generic_urdf import GenericUrdfReacher
-from urdfenvs.urdf_common.urdf_env import UrdfEnv
 from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import Point
 
@@ -26,66 +24,74 @@ class ControlNode(Node):
         self.current_pos = np.empty(0)
         self.trajectory = np.empty(0)
         self.waypoint = 0
+        self.target_reached = False
         # TODO: what other information or topics are needed?
         print("control Node has been created.")
 
     def trajectory_callback(self, msg):
         self.get_logger().info('Got in Control Node traj sub: "%s"' % msg.data)
+        
+        # Recover trajectory information as a 2D Array
         trajectory_data = msg.data
-
-        # Extract dimensions from layout
         rows = msg.layout.dim[0].size
         cols = msg.layout.dim[1].size
-
-        # Reconstruct the original array
         new_trajectory = np.array(trajectory_data).reshape(rows, cols)
+
+        # Only update trajectory if the new one is different
         if not np.array_equal(new_trajectory, self.trajectory):
             self.trajectory = new_trajectory
+            # Reset progress variables
             self.waypoint = 0
-            print('got new trajectory')
+            self.target_reached = False
         print(self.trajectory)
 
     def pos_callback(self, msg):
         self.get_logger().info('Got in Control Node pos sub: "%s"' % msg)
         
-        # Reconstruct the original array
+        # Recover position information as a 1D array
         self.current_pos = np.array([msg.x, msg.y, msg.z])
-        print('current pos', self.current_pos)
-    
-    #Functions that use the motion planning class to compute the RRT
 
     def run_mobile_base(self):
-        env_n = 12
+        env_n = 12 # Number of actuators only the first 3 are used by the base
         action = np.zeros(env_n)
         
+        # Set current position and target
         current_xyz = self.current_pos
         target_xyz = self.trajectory[self.waypoint]
         
-        action_to_send=[0,0,0]
+        action_to_send = [0,0,0]
 
         if (np.linalg.norm(target_xyz - current_xyz) > 0.1): 
-            print('target', target_xyz)
+            # Controller to calculate velocities 
+            # TODO: PID, cubic, quintic
             error_xyz = target_xyz - current_xyz
             desired_velocity_xyz = 1 * error_xyz
-            # TODO: PID ? 
             action_to_send = desired_velocity_xyz
         elif (self.waypoint < target_xyz.shape[0]-1 ):
+            # if the waypoint is reached change the target waypoint to the next
             self.waypoint += 1
         else:
+            # If all waypoints have been reached stop the base and update the target reached variable
             action_to_send = [0,0,0]
+            self.target_reached = True
 
-        # "Action is the variable with the taregt velocities for the robot"
-        action[:3]=action_to_send
-        # "This is what actually gives the command for the robot to move, so I suppose this is what this node should emmit"
+        # Action is the variable with the target velocities for the robot
+        action[:3] = action_to_send
         
+        # Construct the cmd_vel msg
         msg = Float64MultiArray()
         msg.data = action.astype(np.float64).tolist()
+
+        # Publish cmd_vel msg
         self.cmd_vel_publisher_.publish(msg)
         self.get_logger().info('Publishing action from control Node: "%s"' % msg.data)
 
     def ready(self):
+        # Make sure all the required information is available
+        # TODO: arm pose or anything else ? 
         return self.current_pos.size != 0 and self.trajectory.size != 0
     
+    # TODO: arm control
     '''
     def revolute_transform(self, axis, angle):
         """Compute the rotation matrix for a revolute joint."""
@@ -154,11 +160,12 @@ def main(args=None):
         control_node = ControlNode()
 
         while (rclpy.ok()):
-            while (not control_node.ready()):
-                rclpy.spin_once(control_node)
-
-            control_node.run_mobile_base()
             rclpy.spin_once(control_node)
+            # Only start calculations once all the information is available
+            if (control_node.ready()):
+                while(not control_node.target_reached):
+                    control_node.run_mobile_base()
+                    rclpy.spin_once(control_node)
 
     except (KeyboardInterrupt, ExternalShutdownException):
         pass

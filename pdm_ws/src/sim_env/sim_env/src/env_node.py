@@ -27,10 +27,10 @@ class PandaEnvNode(Node):
 
     def cmd_callback(self, msg):
         self.get_logger().info('Got in panda_env Node sub: "%s"' % msg.data)
+        # Turn message into np array
         action = np.array(msg.data)
+        # Call the function that moves the robot with the received action command
         self.panda_sym.move_panda(action)
-        # act on received command
-        # get new info to publish 
 
 
     def pub_map(self):
@@ -40,15 +40,17 @@ class PandaEnvNode(Node):
         self.get_logger().info('Publishing from panda_env Node map: "%s"' % msg_new.data)
 
     def pub_base_pos(self):
+        # Get the current position of the robot
         ob = self.panda_sym.Get_Ob()
         current_xyz = np.round(ob['robot_0']['joint_state']['position'][:3],4)
+        
+        # Create Point msg
         msg = Point()
         msg.x = current_xyz[0]
         msg.y = current_xyz[1]
         msg.z = current_xyz[2]
 
-        print('ob data current pos: ', current_xyz)
-        
+        # Publish current position
         self.base_pos_publisher_.publish(msg)
         self.get_logger().info('Publishing from panda_env Node: "%s"' % msg)
     
