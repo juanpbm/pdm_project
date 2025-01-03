@@ -1,5 +1,4 @@
 import numpy as np
-from urdfpy import URDF
 from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
 import pickle
