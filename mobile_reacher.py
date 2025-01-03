@@ -2,6 +2,7 @@ import numpy as np
 from urdfpy import URDF
 from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
+from tqdm import tqdm
 
 arm_joints= [3,4,5,6,7,8,9,10,11]
 velocity_limit=2.5
@@ -90,7 +91,7 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
     range_joints=range(len(robot.actuated_joints)-3)
     joints=[]
     print(robot.actuated_joints[0])
-    for x in range_joints:
+    for x in tqdm(range_joints):
         print("X.",x)
         joint=robot.actuated_joints[x+3]
         joints.append(joint)

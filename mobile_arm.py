@@ -2,12 +2,27 @@ import numpy as np
 from urdfpy import URDF
 from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
+import pickle
 
 arm_joints= [3,4,5,6,7,8,9,10,11]
 velocity_limit=2.5
 "This is the target xyz that the robot should receive to move the arm to that position"
 target_xyz = np.array([0.6, 0, 0.5])
+class custom_URDF:
+    def __init__(self,origin=np.identity(4),axis=np.zeros(3)):
+      self.origin=origin
+      self.axis=axis
+      
 
+    def create_list(self):
+        self.joints_list=[]
+
+    def add_joint(self,joint):
+        self.joints_list.append(joint)
+
+    def get_joints(self):
+        return self.joints_list
+      
 def revolute_transform(axis, angle):
     """Compute the rotation matrix for a revolute joint."""
     cosine= np.cos(angle) 
@@ -72,21 +87,47 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
     action = np.zeros(env.n())
     ob = env.reset()
     print(f"Initial observation : {ob}")
-    urdf_path="/home/jose/anaconda3/envs/PDM/lib/python3.10/site-packages/robotmodels/mobilePanda/urdf/mobilePanda_with_gripper.urdf"
-    robot = URDF.load(urdf_path)
+    # urdf_path="/home/jose/anaconda3/envs/PDM/lib/python3.10/site-packages/robotmodels/mobilePanda/urdf/mobilePanda_with_gripper.urdf"
+    # robot = URDF.load(urdf_path)
     
-    range_joints=range(len(robot.actuated_joints)-3)
-    joints=[]
-    print(robot.actuated_joints[0])
-    for x in range_joints:
-        print("X.",x)
-        joint=robot.actuated_joints[x+3]
-        joints.append(joint)
+    # range_joints=range(len(robot.actuated_joints)-3)
+    # joints=[]
+    # print(robot.actuated_joints[0])
+    # joints_class = custom_URDF()
+    # joints_class.create_list()
+
+    # for x in range_joints:
+    #     print("X.",x)
+    #     joint=robot.actuated_joints[x+3]
+    #     # joints.append(joint)
+    #     joint_temp = custom_URDF(joint.origin,joint.axis)
+    #     joints_class.add_joint(joint_temp)
 
 
+    # joints_list= joints_class.get_joints()
+    
+    file_path = 'joints.pickle'
+
+    # with open(file_path, 'wb') as file:
+    #     # Save the joints
+    #     pickle.dump(joints_list, file)
+
+    # loaded_data = None
+
+    with open(file_path, 'rb') as file:
+        # Load the joinst data
+        joints_list = pickle.load(file)
+
+
+    print("Loaded Data:\n", joints_list[3].origin)
+
+    # print(joints[3].origin)
+    
+    # print(joints_list[3].origin)
+    input("Done?")
     ob, *_ = env.step(action) 
     
-    current_xyz=compute_forward_kinematics(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))
+    current_xyz=compute_forward_kinematics(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))
 
     print(np.round(current_xyz))
     history = []
@@ -102,7 +143,7 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
                 desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * max_velocity
             desired_velocity = np.hstack((desired_velocity_xyz, np.zeros(3))) 
            
-            J= compute_jacobian(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4), current_xyz)
+            J= compute_jacobian(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4), current_xyz)
 
             joint_velocities = np.linalg.pinv(J) @ desired_velocity # Use pseudoinverse to solve
 
@@ -113,11 +154,11 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
             actions_to_send=np.zeros(env.n())
             
         "These are the instructions to move the arm"
-        for x in range(len(joints)-2):      
+        for x in range(len(joints_list)-2):      
                 action[x+3]=actions_to_send[x]
         "This what moves the arm"
         ob, *_ = env.step(action) 
-        current_xyz = compute_forward_kinematics(joints, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))   
+        current_xyz = compute_forward_kinematics(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))   
         history.append(ob)
     env.close()
 
