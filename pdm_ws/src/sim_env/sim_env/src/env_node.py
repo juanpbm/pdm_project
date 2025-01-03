@@ -14,6 +14,7 @@ class PandaEnvNode(Node):
         super().__init__('panda_env')
         self.map_publisher_ = self.create_publisher(String, 'map', 10)
         self.base_pos_publisher_ = self.create_publisher(Point, 'base_pos', 10)
+        self.arm_pos_publisher_ = self.create_publisher(Float64MultiArray, 'arm_pos', 10)
         self.cmd_vel_subscription = self.create_subscription(
             Float64MultiArray,
             'cmd_vel',
@@ -52,8 +53,19 @@ class PandaEnvNode(Node):
 
         # Publish current position
         self.base_pos_publisher_.publish(msg)
-        self.get_logger().info('Publishing from panda_env Node: "%s"' % msg)
+        self.get_logger().info('Publishing base pos from panda_env Node: "%s"' % msg)
     
+    def pub_arm_pos(self):
+        ob = self.panda_sym.Get_Ob()
+        print(ob)
+        current_joint_pos = np.round(ob['robot_0']['joint_state']['position'][3:],4)
+        msg = Float64MultiArray()
+        msg.data = current_joint_pos.astype(np.float64).tolist()
+
+        # Publish cmd_vel msg
+        self.arm_pos_publisher_.publish(msg)
+        self.get_logger().info('Publishing arm pos from panda_env Node: "%s"' % msg.data)
+
     #Functions that use the env class
     
 def main(args=None):
@@ -64,6 +76,7 @@ def main(args=None):
         while(rclpy.ok()):
             panda_env_node.pub_map()
             panda_env_node.pub_base_pos()
+            panda_env_node.pub_arm_pos()
             rclpy.spin_once(panda_env_node)
 
     except (KeyboardInterrupt, ExternalShutdownException):

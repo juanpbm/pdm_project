@@ -5,31 +5,66 @@ from rclpy.node import Node
 import numpy as np
 from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import Point
+import pickle
 
+class custom_URDF:
+    def __init__(self,origin=np.identity(4),axis=np.zeros(3)):
+        self.origin=origin
+        self.axis=axis
+        
+
+    def create_list(self):
+        self.joints_list=[]
+
+    def add_joint(self,joint):
+        self.joints_list.append(joint)
+
+    def get_joints(self):
+        return self.joints_list
+        
 class ControlNode(Node):
     def __init__(self):
         super().__init__('control')
         self.cmd_vel_publisher_ = self.create_publisher(Float64MultiArray, 'cmd_vel', 10)
-        self.trajectory_subscription = self.create_subscription(
+        self.base_trajectory_subscription = self.create_subscription(
             Float64MultiArray,
-            'trajectory',
-            self.trajectory_callback,
+            'base_trajectory',
+            self.base_trajectory_callback,
             10)
-        self.pos_subscription = self.create_subscription(
+        self.arm_trajectory_subscription = self.create_subscription(
+            Float64MultiArray,
+            'arm_trajectory',
+            self.arm_trajectory_callback,
+            10)
+        self.base_pos_subscription = self.create_subscription(
             Point,
             'base_pos',
-            self.pos_callback,
+            self.base_pos_callback,
+            10)
+        self.arm_pos_subscription = self.create_subscription(
+            Float64MultiArray,
+            'arm_pos',
+            self.arm_pos_callback,
             10)
 
-        self.current_pos = np.empty(0)
-        self.trajectory = np.empty(0)
-        self.waypoint = 0
-        self.target_reached = False
+        self.base_current_pos = np.empty(0)
+        self.arm_current_pos = np.empty(0)
+        self.base_trajectory = np.empty(0)
+        self.arm_trajectory = np.empty(0)
+        self.base_target_reached = False
+        self.arm_target_reached = False
+        self.base_waypoint = 0
+        self.arm_waypoint = 0
+
+        # Robot constants
+        self.n_actions = 12 # Number of actuators only the first 3 are used by the base
+        self.max_base_vel = 2.5 # limit of the robot TODO: get exact value
+
         # TODO: what other information or topics are needed?
         print("control Node has been created.")
 
-    def trajectory_callback(self, msg):
-        self.get_logger().info('Got in Control Node traj sub: "%s"' % msg.data)
+    def base_trajectory_callback(self, msg):
+        self.get_logger().info('Got in Control Node base traj sub: "%s"' % msg.data)
         
         # Recover trajectory information as a 2D Array
         trajectory_data = msg.data
@@ -38,28 +73,50 @@ class ControlNode(Node):
         new_trajectory = np.array(trajectory_data, dtype=float).reshape(rows, cols)
 
         # Only update trajectory if the new one is different
-        if not np.array_equal(new_trajectory, self.trajectory):
-            self.trajectory = new_trajectory
+        if not np.array_equal(new_trajectory, self.base_trajectory):
+            self.base_trajectory = new_trajectory
             # Reset progress variables
-            self.waypoint = 0
-            self.target_reached = False
-        print(self.trajectory)
+            self.base_waypoint = 0
+            self.base_target_reached = False
+        print(self.base_trajectory)
 
-    def pos_callback(self, msg):
-        self.get_logger().info('Got in Control Node pos sub: "%s"' % msg)
+    def base_pos_callback(self, msg):
+        self.get_logger().info('Got in Control Node base pos sub: "%s"' % msg.data)
         
         # Recover position information as a 1D array
-        self.current_pos = np.array([msg.x, msg.y, msg.z], dtype=float)
+        self.base_current_pos = np.array([msg.x, msg.y, msg.z], dtype=float)
+
+    def arm_trajectory_callback(self, msg):
+        self.get_logger().info('Got in Control Node arm traj sub: "%s"' % msg.data)
+        
+        # Recover trajectory information as a 2D Array
+        trajectory_data = msg.data
+        rows = msg.layout.dim[0].size
+        cols = msg.layout.dim[1].size
+        new_trajectory = np.array(trajectory_data, dtype=float).reshape(rows, cols)
+
+        # Only update trajectory if the new one is different
+        if not np.array_equal(new_trajectory, self.arm_trajectory):
+            self.arm_trajectory = new_trajectory
+            # Reset progress variables
+            self.arm_waypoint = 0
+            self.arm_target_reached = False
+        print(self.arm_trajectory)
+
+    def arm_pos_callback(self, msg):
+        self.get_logger().info('Got in Control Node arm pos sub: "%s"' % msg.data)
+        
+        # Recover position information as a 1D array
+        self.arm_current_pos = np.array(msg.data, dtype=float)
+        print(self.arm_current_pos)
 
     def run_mobile_base(self):
-        # TODO: put all constants together
-        env_n = 12 # Number of actuators only the first 3 are used by the base
-        max_vel = 2.5 # limit of the robot TODO: get exact value
-        action = np.zeros(env_n, dtype=float)
+
+        action = np.zeros(self.n_actions, dtype=float)
         
         # Set current position and target
-        current_xyz = self.current_pos
-        target_xyz = self.trajectory[self.waypoint]
+        current_xyz = self.base_current_pos
+        target_xyz = self.base_trajectory[self.base_waypoint]
         
         action_to_send = [0.0,0.0,0.0]
 
@@ -72,15 +129,16 @@ class ControlNode(Node):
 
             # Limit the actions to the max velocity of the robot
             for vel in action_to_send:
-                if vel > max_vel:
-                    vel = max_vel
-        elif (self.waypoint < target_xyz.shape[0]-1 ):
+                if vel > self.max_base_vel:
+                    vel = self.max_base_vel
+        elif (self.base_waypoint < target_xyz.shape[0]-1 ):
             # If the target waypoint is reached update the target waypoint to the next index
-            self.waypoint += 1
+            self.base_waypoint += 1
         else:
             # If all waypoints have been reached stop the base and update the target reached variable
             action_to_send = [0,0,0]
-            self.target_reached = True # TODO: Publish this in case other pkgs need it to continue 
+            self.base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
+
 
         # Action is the variable with the target velocities for the robot
         action[:3] = action_to_send
@@ -93,16 +151,23 @@ class ControlNode(Node):
         self.cmd_vel_publisher_.publish(msg)
         self.get_logger().info('Publishing action from control Node: "%s"' % msg.data)
 
-    def ready(self):
+    def ready_for_base(self):
         # Make sure all the required information is available
-        # TODO: arm pose or anything else ? 
-        return self.current_pos.size != 0 and self.trajectory.size != 0
+        return self.base_current_pos.size != 0 and self.base_trajectory.size != 0
+    
+    def ready_for_arm(self):
+        # Make sure all the required information is available
+        return self.arm_current_pos.size != 0 and self.arm_trajectory.size != 0
     
     # TODO: arm control
-    '''
+'''
+    arm_joints= [3,4,5,6,7,8,9,10,11]
+    velocity_limit=2.5
+    "This is the target xyz that the robot should receive to move the arm to that position"
+    
+        
     def revolute_transform(self, axis, angle):
         """Compute the rotation matrix for a revolute joint."""
-        # Assuming 'axis' is normalized (e.g., [0, 0, 1] for z-axis)
         cosine= np.cos(angle) 
         sine=np.sin(angle)
         R = np.eye(3)
@@ -127,16 +192,10 @@ class ControlNode(Node):
 
             T = T @ joint_transform  # Multiply transformations
 
-        # Extract position from the final transformation matrix
-        position = T[:3, 3]  # Top-right 3x1 part of T
-        # print("Position from matrix:")
-        # print(position)
-        # vector=URDF.matrix_to_xyz_rpy(T)
-        # print("Vector:")
-        # print(vector)
+        position = T[:3, 3]  
         return position
 
-    def compute_jacobian(self, robot_joints, joint_angles, p_end):
+    def compute_jacobian(robot_joints, joint_angles, p_end):
         """Compute the Jacobian for the robot given joint angles."""
         T = np.eye(4)  # Start with the identity matrix
         J = []  # Initialize Jacobian matrix
@@ -158,6 +217,95 @@ class ControlNode(Node):
             
 
         return np.array(J).T  # Convert to numpy array and transpose
+
+    def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
+        # robots = [
+        #     GenericUrdfReacher(urdf="mobilePanda_with_gripper.urdf", mode="vel"),
+        # ]
+        # env: UrdfEnv = UrdfEnv(
+        #     dt=0.01, robots=robots, render=render, num_sub_steps=200,
+        # )
+        action = np.zeros(env.n())
+        ob = env.reset()
+        print(f"Initial observation : {ob}")
+        # urdf_path="/home/jose/anaconda3/envs/PDM/lib/python3.10/site-packages/robotmodels/mobilePanda/urdf/mobilePanda_with_gripper.urdf"
+        # robot = URDF.load(urdf_path)
+        
+        # range_joints=range(len(robot.actuated_joints)-3)
+        # joints=[]
+        # print(robot.actuated_joints[0])
+        # joints_class = custom_URDF()
+        # joints_class.create_list()
+
+        # for x in range_joints:
+        #     print("X.",x)
+        #     joint=robot.actuated_joints[x+3]
+        #     # joints.append(joint)
+        #     joint_temp = custom_URDF(joint.origin,joint.axis)
+        #     joints_class.add_joint(joint_temp)
+
+
+        # joints_list= joints_class.get_joints()
+        
+        file_path = 'joints.pickle'
+
+        # with open(file_path, 'wb') as file:
+        #     # Save the joints
+        #     pickle.dump(joints_list, file)
+
+        # loaded_data = None
+
+        with open(file_path, 'rb') as file:
+            # Load the joinst data
+            joints_list = pickle.load(file)
+
+
+        print("Loaded Data:\n", joints_list[3].origin)
+
+        # print(joints[3].origin)
+        
+        # print(joints_list[3].origin)
+        input("Done?")
+        ob, *_ = env.step(action) 
+        
+        current_xyz=compute_forward_kinematics(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))
+
+        print(np.round(current_xyz))
+        history = []
+        actions_to_send=np.zeros(env.n())
+        max_velocity = 0.5
+        for i in range(n_steps):
+            if (np.linalg.norm(target_xyz - current_xyz) > 0.01): 
+            
+                error_xyz = target_xyz - current_xyz
+                desired_velocity_xyz = 1.0 * error_xyz  
+
+                if np.linalg.norm(desired_velocity_xyz) > max_velocity:
+                    desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * max_velocity
+                desired_velocity = np.hstack((desired_velocity_xyz, np.zeros(3))) 
+            
+                J= compute_jacobian(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4), current_xyz)
+
+                joint_velocities = np.linalg.pinv(J) @ desired_velocity # Use pseudoinverse to solve
+
+                actions_to_send=joint_velocities
+                
+            else:
+
+                actions_to_send=np.zeros(env.n())
+                
+            "These are the instructions to move the arm"
+            for x in range(len(joints_list)-2):      
+                    action[x+3]=actions_to_send[x]
+            "This what moves the arm"
+            ob, *_ = env.step(action) 
+            current_xyz = compute_forward_kinematics(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))   
+            history.append(ob)
+        env.close()
+
+        
+
+        return history
 '''
 
 def main(args=None):
@@ -165,15 +313,15 @@ def main(args=None):
     try:
         rclpy.init(args=args)
         control_node = ControlNode()
-
+        # control_node.run_mobile_reacher()
         while (rclpy.ok()):
             rclpy.spin_once(control_node)
             
             # Only start calculations once all the information is available
-            if (control_node.ready()):
-                while(not control_node.target_reached):
-                    control_node.run_mobile_base()
-                    rclpy.spin_once(control_node)
+            # if (control_node.ready_for_base()):
+            #     while(not control_node.base_target_reached):
+            #         control_node.run_mobile_base()
+            #         rclpy.spin_once(control_node)
 
     except (KeyboardInterrupt, ExternalShutdownException):
         pass

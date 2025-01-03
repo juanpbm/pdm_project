@@ -11,7 +11,8 @@ from std_msgs.msg import String
 class MotionPlannerNode(Node):
     def __init__(self):
         super().__init__('motion_planner')
-        self.trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'trajectory', 10)
+        self.base_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'base_trajectory', 10)
+        self.arm_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'arm_trajectory', 10)
         self.subscription = self.create_subscription(
             String,
             'map',
@@ -27,19 +28,33 @@ class MotionPlannerNode(Node):
         # TODO: compute trajectory
 
         # Dummy trajectory. The computed trajectory should return something similar
-        target_xyz = np.array([[1, 1, 0], [2, 2, 0], [1, 2, 0], [0, 0, 0]], dtype=float) 
+        base_trajectory = np.array([[1, 1, 0], [2, 2, 0], [1, 2, 0], [0, 0, 0]], dtype=float) 
+        arm_trajectory = np.array([[0.6, 0, 0.5]])
 
-        # Create array message with the trajectory information
-        msg = Float64MultiArray()
-        msg.data = target_xyz.flatten().tolist()
-        assert all(isinstance(val, float) for val in msg.data), "All elements must be floats"
+        # Create array message with the base trajectory information
+        base_msg = Float64MultiArray()
+        base_msg.data = base_trajectory.flatten().tolist()
+        assert all(isinstance(val, float) for val in base_msg.data) # All elements must be floats
         # Define dimensions of the msg to reconstruct by the subscribers
-        msg.layout.dim.append(MultiArrayDimension(label='rows', size=target_xyz.shape[0], stride=target_xyz.shape[1] * target_xyz.shape[0]))
-        msg.layout.dim.append(MultiArrayDimension(label='cols', size=target_xyz.shape[1], stride=target_xyz.shape[1]))
+        base_msg.layout.dim.append(MultiArrayDimension(label='rows', size=base_trajectory.shape[0], stride=base_trajectory.shape[1] * base_trajectory.shape[0]))
+        base_msg.layout.dim.append(MultiArrayDimension(label='cols', size=base_trajectory.shape[1], stride=base_trajectory.shape[1]))
 
-        # Publish Trajectory 
-        self.trajectory_publisher_.publish(msg)
-        self.get_logger().info("Published target_xyz array.")
+        # Publish base Trajectory 
+        self.base_trajectory_publisher_.publish(base_msg)
+        self.get_logger().info('Published base_target_xyz:"%s"' % base_msg.data)
+
+        # Create array message with the arm trajectory information
+        arm_msg = Float64MultiArray()
+        arm_msg.data = arm_trajectory.flatten().tolist()
+        assert all(isinstance(val, float) for val in arm_msg.data) # All elements must be floats
+        # Define dimensions of the msg to reconstruct by the subscribers
+        arm_msg.layout.dim.append(MultiArrayDimension(label='rows', size=arm_trajectory.shape[0], stride=arm_trajectory.shape[1] * arm_trajectory.shape[0]))
+        arm_msg.layout.dim.append(MultiArrayDimension(label='cols', size=arm_trajectory.shape[1], stride=arm_trajectory.shape[1]))
+
+        # Publish arm trajectory
+        self.arm_trajectory_publisher_.publish(arm_msg)
+        self.get_logger().info('Published arm_target_xyz:"%s"' % arm_msg.data)
+
 
     #Functions that use the motion planning class to compute the RRT
 
