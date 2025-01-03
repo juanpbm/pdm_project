@@ -35,7 +35,7 @@ class ControlNode(Node):
         trajectory_data = msg.data
         rows = msg.layout.dim[0].size
         cols = msg.layout.dim[1].size
-        new_trajectory = np.array(trajectory_data).reshape(rows, cols)
+        new_trajectory = np.array(trajectory_data, dtype=float).reshape(rows, cols)
 
         # Only update trajectory if the new one is different
         if not np.array_equal(new_trajectory, self.trajectory):
@@ -49,17 +49,19 @@ class ControlNode(Node):
         self.get_logger().info('Got in Control Node pos sub: "%s"' % msg)
         
         # Recover position information as a 1D array
-        self.current_pos = np.array([msg.x, msg.y, msg.z])
+        self.current_pos = np.array([msg.x, msg.y, msg.z], dtype=float)
 
     def run_mobile_base(self):
+        # TODO: put all constants together
         env_n = 12 # Number of actuators only the first 3 are used by the base
-        action = np.zeros(env_n)
+        max_vel = 2.5 # limit of the robot TODO: get exact value
+        action = np.zeros(env_n, dtype=float)
         
         # Set current position and target
         current_xyz = self.current_pos
         target_xyz = self.trajectory[self.waypoint]
         
-        action_to_send = [0,0,0]
+        action_to_send = [0.0,0.0,0.0]
 
         if (np.linalg.norm(target_xyz - current_xyz) > 0.1): 
             # Controller to calculate velocities 
@@ -67,13 +69,18 @@ class ControlNode(Node):
             error_xyz = target_xyz - current_xyz
             desired_velocity_xyz = 1 * error_xyz
             action_to_send = desired_velocity_xyz
+
+            # Limit the actions to the max velocity of the robot
+            for vel in action_to_send:
+                if vel > max_vel:
+                    vel = max_vel
         elif (self.waypoint < target_xyz.shape[0]-1 ):
-            # if the waypoint is reached change the target waypoint to the next
+            # If the target waypoint is reached update the target waypoint to the next index
             self.waypoint += 1
         else:
             # If all waypoints have been reached stop the base and update the target reached variable
             action_to_send = [0,0,0]
-            self.target_reached = True
+            self.target_reached = True # TODO: Publish this in case other pkgs need it to continue 
 
         # Action is the variable with the target velocities for the robot
         action[:3] = action_to_send
@@ -161,6 +168,7 @@ def main(args=None):
 
         while (rclpy.ok()):
             rclpy.spin_once(control_node)
+            
             # Only start calculations once all the information is available
             if (control_node.ready()):
                 while(not control_node.target_reached):
