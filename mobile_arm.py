@@ -2,25 +2,14 @@ import numpy as np
 from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
 import pickle
+from urdfpy import URDF
+from custom_urdf import custom_URDF
 
 arm_joints= [3,4,5,6,7,8,9,10,11]
 velocity_limit=2.5
 "This is the target xyz that the robot should receive to move the arm to that position"
 target_xyz = np.array([0.6, 0, 0.5])
-class custom_URDF:
-    def __init__(self,origin=np.identity(4),axis=np.zeros(3)):
-      self.origin=origin
-      self.axis=axis
-      
 
-    def create_list(self):
-        self.joints_list=[]
-
-    def add_joint(self,joint):
-        self.joints_list.append(joint)
-
-    def get_joints(self):
-        return self.joints_list
       
 def revolute_transform(axis, angle):
     """Compute the rotation matrix for a revolute joint."""
@@ -86,30 +75,30 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
     action = np.zeros(env.n())
     ob = env.reset()
     print(f"Initial observation : {ob}")
-    # urdf_path="/home/jose/anaconda3/envs/PDM/lib/python3.10/site-packages/robotmodels/mobilePanda/urdf/mobilePanda_with_gripper.urdf"
-    # robot = URDF.load(urdf_path)
+    urdf_path="/home/jose/anaconda3/envs/PDM/lib/python3.10/site-packages/robotmodels/mobilePanda/urdf/mobilePanda_with_gripper.urdf"
+    robot = URDF.load(urdf_path)
     
-    # range_joints=range(len(robot.actuated_joints)-3)
+    range_joints=range(len(robot.actuated_joints)-3)
     # joints=[]
-    # print(robot.actuated_joints[0])
-    # joints_class = custom_URDF()
-    # joints_class.create_list()
+    print(robot.actuated_joints[0])
+    joints_class = custom_URDF()
+    joints_class.create_list()
 
-    # for x in range_joints:
-    #     print("X.",x)
-    #     joint=robot.actuated_joints[x+3]
-    #     # joints.append(joint)
-    #     joint_temp = custom_URDF(joint.origin,joint.axis)
-    #     joints_class.add_joint(joint_temp)
+    for x in range_joints:
+        print("X.",x)
+        joint=robot.actuated_joints[x+3]
+        # joints.append(joint)
+        joint_temp = custom_URDF(joint.origin,joint.axis)
+        joints_class.add_joint(joint_temp)
 
 
-    # joints_list= joints_class.get_joints()
+    joints_list= joints_class.get_joints()
     
     file_path = 'joints.pickle'
 
-    # with open(file_path, 'wb') as file:
-    #     # Save the joints
-    #     pickle.dump(joints_list, file)
+    with open(file_path, 'wb') as file:
+        # Save the joints
+        pickle.dump(joints_list, file)
 
     # loaded_data = None
 
@@ -119,7 +108,7 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
 
 
     print("Loaded Data:\n", joints_list[3].origin)
-
+    print("Type", type(joints_list))
     # print(joints[3].origin)
     
     # print(joints_list[3].origin)
