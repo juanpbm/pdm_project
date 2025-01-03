@@ -1,0 +1,8 @@
+setup.py
+robot_trials/__init__.py
+robot_trials.egg-info/PKG-INFO
+robot_trials.egg-info/SOURCES.txt
+robot_trials.egg-info/dependency_links.txt
+robot_trials.egg-info/top_level.txt
+robot_trials/msg/__init__.py
+robot_trials/msg/_base_plan.py

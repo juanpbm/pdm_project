@@ -1,0 +1,145 @@
+[0.012s] Invoking command in '/home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros2) PS1=Singularity:\W> /usr/bin/cmake --build /home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials -- -j12 -l12
+[0.062s] [  3%] Built target robot_trials__cpp
+[0.062s] [ 12%] Built target robot_trials__rosidl_generator_c
+[0.072s] [ 12%] Built target ament_cmake_python_copy_robot_trials
+[0.085s] [ 22%] Built target robot_trials__rosidl_typesupport_fastrtps_cpp
+[0.087s] [ 32%] Built target robot_trials__rosidl_typesupport_cpp
+[0.089s] [ 41%] Built target robot_trials__rosidl_typesupport_fastrtps_c
+[0.090s] [ 51%] Built target robot_trials__rosidl_typesupport_introspection_cpp
+[0.096s] [ 61%] Built target robot_trials__rosidl_typesupport_introspection_c
+[0.097s] [ 70%] Built target robot_trials__rosidl_typesupport_c
+[0.118s] [ 70%] Built target robot_trials
+[0.140s] [ 74%] Built target robot_trials__py
+[0.163s] [ 80%] Built target robot_trials__rosidl_generator_py
+[0.186s] [ 93%] Built target robot_trials__rosidl_typesupport_fastrtps_c__pyext
+[0.186s] [ 93%] Built target robot_trials__rosidl_typesupport_introspection_c__pyext
+[0.186s] [100%] Built target robot_trials__rosidl_typesupport_c__pyext
+[0.337s] running egg_info
+[0.338s] writing robot_trials.egg-info/PKG-INFO
+[0.338s] writing dependency_links to robot_trials.egg-info/dependency_links.txt
+[0.338s] writing top-level names to robot_trials.egg-info/top_level.txt
+[0.341s] reading manifest file 'robot_trials.egg-info/SOURCES.txt'
+[0.341s] writing manifest file 'robot_trials.egg-info/SOURCES.txt'
+[0.365s] [100%] Built target ament_cmake_python_build_robot_trials_egg
+[0.377s] Invoked command in '/home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros2) PS1=Singularity:\W> /usr/bin/cmake --build /home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials -- -j12 -l12
+[0.450s] Invoking command in '/home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros2) PS1=Singularity:\W> /usr/bin/cmake --install /home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials
+[0.458s] -- Install configuration: ""
+[0.458s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/ament_index/resource_index/rosidl_interfaces/robot_trials
+[0.458s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials
+[0.458s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__struct.h
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__functions.c
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__functions.h
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__type_support.h
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/base_plan.h
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/rosidl_generator_c__visibility_control.h
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/environment/library_path.sh
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/environment/library_path.dsv
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/lib/librobot_trials__rosidl_generator_c.so
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg
+[0.459s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__rosidl_typesupport_fastrtps_c.h
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/lib/librobot_trials__rosidl_typesupport_fastrtps_c.so
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__traits.hpp
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__struct.hpp
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__builder.hpp
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/base_plan.hpp
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg
+[0.460s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__rosidl_typesupport_fastrtps_cpp.hpp
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/dds_fastrtps
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/lib/librobot_trials__rosidl_typesupport_fastrtps_cpp.so
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__rosidl_typesupport_introspection_c.h
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__type_support.c
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/lib/librobot_trials__rosidl_typesupport_introspection_c.so
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/lib/librobot_trials__rosidl_typesupport_c.so
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials
+[0.461s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg
+[0.462s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail
+[0.462s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__type_support.cpp
+[0.462s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/include/robot_trials/robot_trials/msg/detail/base_plan__rosidl_typesupport_introspection_cpp.hpp
+[0.462s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/lib/librobot_trials__rosidl_typesupport_introspection_cpp.so
+[0.462s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/lib/librobot_trials__rosidl_typesupport_cpp.so
+[0.462s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/environment/pythonpath.sh
+[0.462s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/environment/pythonpath.dsv
+[0.462s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials-0.0.0-py3.10.egg-info
+[0.462s] -- Installing: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials-0.0.0-py3.10.egg-info/PKG-INFO
+[0.462s] -- Installing: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials-0.0.0-py3.10.egg-info/dependency_links.txt
+[0.462s] -- Installing: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials-0.0.0-py3.10.egg-info/top_level.txt
+[0.462s] -- Installing: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials-0.0.0-py3.10.egg-info/SOURCES.txt
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/msg
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/msg/_base_plan_s.c
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/msg/__init__.py
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/msg/_base_plan.py
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/robot_trials_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/_robot_trials_s.ep.rosidl_typesupport_c.c
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/_robot_trials_s.ep.rosidl_typesupport_fastrtps_c.c
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/__init__.py
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/robot_trials_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/librobot_trials__rosidl_generator_py.so
+[0.463s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/robot_trials_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[0.464s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/_robot_trials_s.ep.rosidl_typesupport_introspection_c.c
+[0.494s] Listing '/home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials'...
+[0.495s] Listing '/home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/msg'...
+[0.499s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/robot_trials_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[0.499s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/robot_trials_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[0.499s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/local/lib/python3.10/dist-packages/robot_trials/robot_trials_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[0.500s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/lib/librobot_trials__rosidl_generator_py.so
+[0.500s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/msg/BasePlan.idl
+[0.500s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/msg/BasePlan.msg
+[0.500s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials//launch
+[0.500s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/lib/robot_trials/base_planning_node.py
+[0.500s] -- Installing: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/lib/robot_trials/mobile_base_node.py
+[0.501s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/ament_index/resource_index/package_run_dependencies/robot_trials
+[0.501s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/ament_index/resource_index/parent_prefix_path/robot_trials
+[0.501s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/environment/ament_prefix_path.sh
+[0.501s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/environment/ament_prefix_path.dsv
+[0.501s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/environment/path.sh
+[0.501s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/environment/path.dsv
+[0.501s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/local_setup.bash
+[0.501s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/local_setup.sh
+[0.501s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/local_setup.zsh
+[0.501s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/local_setup.dsv
+[0.502s] -- Installing: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/package.dsv
+[0.502s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/ament_index/resource_index/packages/robot_trials
+[0.502s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/export_robot_trials__rosidl_generator_cExport.cmake
+[0.502s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/export_robot_trials__rosidl_generator_cExport-noconfig.cmake
+[0.502s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/export_robot_trials__rosidl_typesupport_fastrtps_cExport.cmake
+[0.502s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/export_robot_trials__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+[0.502s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/export_robot_trials__rosidl_generator_cppExport.cmake
+[0.502s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/export_robot_trials__rosidl_typesupport_fastrtps_cppExport.cmake
+[0.502s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/export_robot_trials__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+[0.502s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/robot_trials__rosidl_typesupport_introspection_cExport.cmake
+[0.502s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/robot_trials__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[0.502s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/robot_trials__rosidl_typesupport_cExport.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/robot_trials__rosidl_typesupport_cExport-noconfig.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/robot_trials__rosidl_typesupport_introspection_cppExport.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/robot_trials__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/robot_trials__rosidl_typesupport_cppExport.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/robot_trials__rosidl_typesupport_cppExport-noconfig.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/export_robot_trials__rosidl_generator_pyExport.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/export_robot_trials__rosidl_generator_pyExport-noconfig.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/ament_cmake_export_dependencies-extras.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/rosidl_cmake-extras.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/ament_cmake_export_include_directories-extras.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/ament_cmake_export_libraries-extras.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/ament_cmake_export_targets-extras.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[0.503s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[0.504s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/robot_trialsConfig.cmake
+[0.504s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/cmake/robot_trialsConfig-version.cmake
+[0.504s] -- Up-to-date: /home/zuleikarg/Desktop/pdm/base_ws/install/robot_trials/share/robot_trials/package.xml
+[0.505s] Invoked command in '/home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros2) PS1=Singularity:\W> /usr/bin/cmake --install /home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials

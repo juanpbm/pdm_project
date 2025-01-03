@@ -1,0 +1,6 @@
+[31mCMake Error at cmake_install.cmake:371 (file):
+  file INSTALL cannot find
+  "/home/zuleikarg/Desktop/pdm/base_ws/src/robot_trials/scripts/base_planning_node.py":
+  No such file or directory.
+
+[0m

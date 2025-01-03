@@ -1,0 +1,2 @@
+Invoking command in '/home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials': CONDA_PROMPT_MODIFIER=(ros2) PS1=Singularity:\W> /usr/bin/cmake --build /home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials -- -j12 -l12
+Invoked command in '/home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials' returned '2': CONDA_PROMPT_MODIFIER=(ros2) PS1=Singularity:\W> /usr/bin/cmake --build /home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials -- -j12 -l12

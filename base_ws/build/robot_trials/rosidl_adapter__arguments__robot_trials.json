@@ -1,0 +1,6 @@
+{
+  "package_name": "robot_trials",
+  "non_idl_tuples": [
+    "/home/zuleikarg/Desktop/pdm/base_ws/src/robot_trials:msg/BasePlan.msg"
+  ]
+}

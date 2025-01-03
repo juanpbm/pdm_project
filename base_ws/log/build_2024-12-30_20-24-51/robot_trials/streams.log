@@ -1,0 +1,31 @@
+[0.012s] Invoking command in '/home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros2) PS1=Singularity:\W> /usr/bin/cmake --build /home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials -- -j12 -l12
+[0.033s] -- Found ament_cmake: 1.3.10 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.154s] -- Found rclpy: 3.3.14 (/opt/ros/humble/share/rclpy/cmake)
+[0.154s] -- Found std_msgs: 4.2.4 (/opt/ros/humble/share/std_msgs/cmake)
+[0.177s] -- Found rosidl_generator_c: 3.1.5 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.180s] -- Found rosidl_adapter: 3.1.5 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.186s] -- Found rosidl_generator_cpp: 3.1.5 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.195s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.211s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.234s] -- Found rosidl_default_generators: 1.2.0 (/opt/ros/humble/share/rosidl_default_generators/cmake)
+[0.475s] -- Found ament_cmake_ros: 0.10.0 (/opt/ros/humble/share/ament_cmake_ros/cmake)
+[0.773s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.898s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.921s] -- Found python_cmake_module: 0.10.0 (/opt/ros/humble/share/python_cmake_module/cmake)
+[0.945s] -- Using PYTHON_EXECUTABLE: /usr/bin/python3
+[0.945s] -- Using PYTHON_INCLUDE_DIRS: /usr/include/python3.10
+[0.945s] -- Using PYTHON_LIBRARIES: /usr/lib/x86_64-linux-gnu/libpython3.10.so
+[0.955s] -- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[0.964s] -- Added test 'flake8' to check Python code syntax and style conventions
+[0.964s] -- Added test 'lint_cmake' to check CMake code style
+[0.965s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[0.966s] -- Added test 'xmllint' to check XML markup files
+[0.968s] -- Configuring done
+[0.975s] [0mCMake Error: Cannot determine link language for target "base_planning_node".[0m
+[0.975s] [0mCMake Error: CMake can not determine linker language for target: base_planning_node[0m
+[0.976s] [0mCMake Error: Cannot determine link language for target "mobile_base_node".[0m
+[0.976s] [0mCMake Error: CMake can not determine linker language for target: mobile_base_node[0m
+[1.008s] -- Generating done
+[1.011s] [0mCMake Generate step failed.  Build files cannot be regenerated correctly.[0m
+[1.017s] gmake: *** [Makefile:775: cmake_check_build_system] Error 1
+[1.019s] Invoked command in '/home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros2) PS1=Singularity:\W> /usr/bin/cmake --build /home/zuleikarg/Desktop/pdm/base_ws/build/robot_trials -- -j12 -l12
