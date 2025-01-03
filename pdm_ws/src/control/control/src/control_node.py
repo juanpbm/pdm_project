@@ -9,14 +9,6 @@ import pickle
 import os
 from ament_index_python.packages import get_package_share_directory
 
-# from control.src.custom_urdf import custom_URDF
-
-# class CustomUnpickler(pickle.Unpickler):
-#     def find_class(self, module, name):
-#         if module == "__main__":
-#             module = "control.src.custom_urdf"  # Redirect to the correct module
-#         return super().find_class(module, name)
-
 class custom_URDF:
     def __init__(self,origin=np.identity(4),axis=np.zeros(3)):
       self.origin=origin
@@ -67,7 +59,8 @@ class ControlNode(Node):
 
         # Robot constants
         self.n_actions = 12 # Number of actuators only the first 3 are used by the base
-        self.max_base_vel = 2.5 # limit of the robot TODO: get exact value
+        self.base_max_vel = 2.5 # limit of the robot TODO: get exact value
+        self.arm_max_vel = 0.5
 
         # TODO: what other information or topics are needed?
         print("control Node has been created.")
@@ -137,9 +130,10 @@ class ControlNode(Node):
             action_to_send = desired_velocity_xyz
 
             # Limit the actions to the max velocity of the robot
+            # TODO: Check and match with arm
             for vel in action_to_send:
-                if vel > self.max_base_vel:
-                    vel = self.max_base_vel
+                if vel > self.base_max_vel:
+                    vel = self.base_max_vel
         elif (self.base_waypoint < target_xyz.shape[0]-1 ):
             # If the target waypoint is reached update the target waypoint to the next index
             self.base_waypoint += 1
@@ -152,11 +146,11 @@ class ControlNode(Node):
         # Action is the variable with the target velocities for the robot
         action[:3] = action_to_send
         
-        # Construct the cmd_vel msg
+        # Construct the cmd_vel msg for the base
         msg = Float64MultiArray()
         msg.data = action.astype(np.float64).tolist()
 
-        # Publish cmd_vel msg
+        # Publish cmd_vel msg 
         self.cmd_vel_publisher_.publish(msg)
         self.get_logger().info('Publishing base action from control Node: "%s"' % msg.data)
 
@@ -228,58 +222,64 @@ class ControlNode(Node):
     def run_panda_arm(self):
         action = np.zeros(self.n_actions)
         
+        # path to pikle files containing arm information
         file_path_axis = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_axis.pickle')
         file_path_origin = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_origin.pickle')
 
+        # Load Arm information
         joints_class = custom_URDF()
         joints_class.create_list()
         with open(file_path_origin, 'rb') as file:
-            # Load the joinst data
+            # Load the joint origin data
             joints_origin_list_loaded = pickle.load(file)
 
         with open(file_path_axis, 'rb') as file:
-            # Load the joinst data
+            # Load the joints axis data
             joints_axis_list_loaded = pickle.load(file)
 
+        # Combine joints data
         for x in range(len(joints_origin_list_loaded)):
             joint_temp = custom_URDF(joints_origin_list_loaded[x],joints_axis_list_loaded[x])
             joints_class.add_joint(joint_temp)
 
         joints_list = joints_class.get_joints()
     
-        current_xyz = self.compute_forward_kinematics(joints_list, self.arm_current_pos)
-        target_xyz = self.arm_trajectory[self.arm_waypoint]
+        # Get current position and trajectory
+        current_arm_pos = self.compute_forward_kinematics(joints_list, self.arm_current_pos)
+        target_arm_pos = self.arm_trajectory[self.arm_waypoint]
 
-        print(np.round(current_xyz))
-        history = []
-        actions_to_send=np.zeros(self.n_actions)
-        max_velocity = 0.5
-        # for i in range(n_steps):
-        if (np.linalg.norm(target_xyz - current_xyz) > 0.01): 
+        actions_to_send = np.zeros(self.n_actions)
+
+        if (np.linalg.norm(target_arm_pos - current_arm_pos) > 0.01): 
+            # Controller to calculate velocities 
+            # TODO: PID, cubic, quinti
+            error_arm_pos = target_arm_pos - current_arm_pos
+            desired_velocity_arm = 1.0 * error_arm_pos  
+
+            # Limit the actions to the max velocity of the robot
+            if np.linalg.norm(desired_velocity_arm) > self.arm_max_vel:
+                desired_velocity_arm = desired_velocity_arm / np.linalg.norm(desired_velocity_arm) * self.arm_max_vel
+            desired_velocity_arm = np.hstack((desired_velocity_arm, np.zeros(3))) 
         
-            error_xyz = target_xyz - current_xyz
-            desired_velocity_xyz = 1.0 * error_xyz  
+            # transform endpoint vel to joint vel
+            J = self.compute_jacobian(joints_list, self.arm_current_pos, current_arm_pos)
 
-            if np.linalg.norm(desired_velocity_xyz) > max_velocity:
-                desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * max_velocity
-            desired_velocity = np.hstack((desired_velocity_xyz, np.zeros(3))) 
-        
-            J= self.compute_jacobian(joints_list, self.arm_current_pos, current_xyz)
+            joint_velocities = np.linalg.pinv(J) @ desired_velocity_arm # Use pseudoinverse to solve
 
-            joint_velocities = np.linalg.pinv(J) @ desired_velocity # Use pseudoinverse to solve
-
-            actions_to_send=joint_velocities
-        elif (self.base_waypoint < target_xyz.shape[0]-1 ):
+            actions_to_send = joint_velocities
+        elif (self.base_waypoint < target_arm_pos.shape[0]-1 ):
             # If the target waypoint is reached update the target waypoint to the next index
             self.base_waypoint += 1 
         else:
-            actions_to_send=np.zeros(self.n_actions)
+            # If all waypoints have been reached stop the base and update the target reached variable
+            actions_to_send = np.zeros(self.n_actions)
             self.arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue
             
         # These are the instructions to move the arm
-        for x in range(len(joints_list)-2):      
-                action[x+3]=actions_to_send[x]
+        for i in range(len(joints_list)-2):      
+                action[i + 3] = actions_to_send[i]
         
+        # Construct the cmd_vel msg for the joints
         msg = Float64MultiArray()
         msg.data = action.astype(np.float64).tolist()
 
