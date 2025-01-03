@@ -3,7 +3,20 @@ from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
 import pickle
 from urdfpy import URDF
-from custom_urdf import custom_URDF
+class custom_URDF:
+    def __init__(self,origin=np.identity(4),axis=np.zeros(3)):
+      self.origin=origin
+      self.axis=axis
+      
+
+    def create_list(self):
+        self.joints_list=[]
+
+    def add_joint(self,joint):
+        self.joints_list.append(joint)
+
+    def get_joints(self):
+        return self.joints_list
 
 arm_joints= [3,4,5,6,7,8,9,10,11]
 velocity_limit=2.5
@@ -75,38 +88,50 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
     action = np.zeros(env.n())
     ob = env.reset()
     print(f"Initial observation : {ob}")
-    urdf_path="/home/jose/anaconda3/envs/PDM/lib/python3.10/site-packages/robotmodels/mobilePanda/urdf/mobilePanda_with_gripper.urdf"
-    robot = URDF.load(urdf_path)
+    # urdf_path="/home/jose/anaconda3/envs/PDM/lib/python3.10/site-packages/robotmodels/mobilePanda/urdf/mobilePanda_with_gripper.urdf"
+    # robot = URDF.load(urdf_path)
     
-    range_joints=range(len(robot.actuated_joints)-3)
+    # range_joints=range(len(robot.actuated_joints)-3)
     # joints=[]
-    print(robot.actuated_joints[0])
+    # joints_origin_list=[]
+    # joints_axis_list=[]
+    # print(robot.actuated_joints[0])
     joints_class = custom_URDF()
     joints_class.create_list()
-
-    for x in range_joints:
-        print("X.",x)
-        joint=robot.actuated_joints[x+3]
-        # joints.append(joint)
-        joint_temp = custom_URDF(joint.origin,joint.axis)
-        joints_class.add_joint(joint_temp)
-
-
-    joints_list= joints_class.get_joints()
     
-    file_path = 'joints.pickle'
+    # for x in range_joints:
+    #     # print("X.",x)
+    #     joint=robot.actuated_joints[x+3]
+    #     joints_origin_list.append(joint.origin)
+    #     joints_axis_list.append(joint.axis)
+        
 
-    with open(file_path, 'wb') as file:
-        # Save the joints
-        pickle.dump(joints_list, file)
+
+    # with open('joints_origin.pickle', 'wb') as file:
+    #     # Save the joints
+    #     pickle.dump(joints_origin_list, file)
+
+    # with open('joints_axis.pickle', 'wb') as file:
+    #     # Save the joints
+    #     pickle.dump(joints_axis_list, file)
 
     # loaded_data = None
 
-    with open(file_path, 'rb') as file:
+    with open('joints_origin.pickle', 'rb') as file:
         # Load the joinst data
-        joints_list = pickle.load(file)
+        joints_origin_list_loaded = pickle.load(file)
 
+    with open('joints_axis.pickle', 'rb') as file:
+        # Load the joinst data
+        joints_axis_list_loaded = pickle.load(file)
 
+    for x in range(len(joints_origin_list_loaded)):
+        joint_temp = custom_URDF(joints_origin_list_loaded[x],joints_axis_list_loaded[x])
+        joints_class.add_joint(joint_temp)
+
+    joints_list= joints_class.get_joints()
+
+    print("Loaded 2:\n", joints_origin_list_loaded[3])
     print("Loaded Data:\n", joints_list[3].origin)
     print("Type", type(joints_list))
     # print(joints[3].origin)
