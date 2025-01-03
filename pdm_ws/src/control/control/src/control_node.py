@@ -6,13 +6,22 @@ import numpy as np
 from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import Point
 import pickle
+import os
+from ament_index_python.packages import get_package_share_directory
+
+# from control.src.custom_urdf import custom_URDF
+
+# class CustomUnpickler(pickle.Unpickler):
+#     def find_class(self, module, name):
+#         if module == "__main__":
+#             module = "control.src.custom_urdf"  # Redirect to the correct module
+#         return super().find_class(module, name)
 
 class custom_URDF:
     def __init__(self,origin=np.identity(4),axis=np.zeros(3)):
-        self.origin=origin
-        self.axis=axis
-        
-
+      self.origin=origin
+      self.axis=axis
+      
     def create_list(self):
         self.joints_list=[]
 
@@ -21,7 +30,7 @@ class custom_URDF:
 
     def get_joints(self):
         return self.joints_list
-        
+    
 class ControlNode(Node):
     def __init__(self):
         super().__init__('control')
@@ -81,7 +90,7 @@ class ControlNode(Node):
         print(self.base_trajectory)
 
     def base_pos_callback(self, msg):
-        self.get_logger().info('Got in Control Node base pos sub: "%s"' % msg.data)
+        self.get_logger().info('Got in Control Node base pos sub: "%s"' % msg)
         
         # Recover position information as a 1D array
         self.base_current_pos = np.array([msg.x, msg.y, msg.z], dtype=float)
@@ -110,7 +119,7 @@ class ControlNode(Node):
         self.arm_current_pos = np.array(msg.data, dtype=float)
         print(self.arm_current_pos)
 
-    def run_mobile_base(self):
+    def run_panda_base(self):
 
         action = np.zeros(self.n_actions, dtype=float)
         
@@ -149,7 +158,7 @@ class ControlNode(Node):
 
         # Publish cmd_vel msg
         self.cmd_vel_publisher_.publish(msg)
-        self.get_logger().info('Publishing action from control Node: "%s"' % msg.data)
+        self.get_logger().info('Publishing base action from control Node: "%s"' % msg.data)
 
     def ready_for_base(self):
         # Make sure all the required information is available
@@ -160,12 +169,10 @@ class ControlNode(Node):
         return self.arm_current_pos.size != 0 and self.arm_trajectory.size != 0
     
     # TODO: arm control
-'''
     arm_joints= [3,4,5,6,7,8,9,10,11]
     velocity_limit=2.5
     "This is the target xyz that the robot should receive to move the arm to that position"
     
-        
     def revolute_transform(self, axis, angle):
         """Compute the rotation matrix for a revolute joint."""
         cosine= np.cos(angle) 
@@ -195,7 +202,7 @@ class ControlNode(Node):
         position = T[:3, 3]  
         return position
 
-    def compute_jacobian(robot_joints, joint_angles, p_end):
+    def compute_jacobian(self, robot_joints, joint_angles, p_end):
         """Compute the Jacobian for the robot given joint angles."""
         T = np.eye(4)  # Start with the identity matrix
         J = []  # Initialize Jacobian matrix
@@ -217,96 +224,69 @@ class ControlNode(Node):
             
 
         return np.array(J).T  # Convert to numpy array and transpose
-
-    def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
-        # robots = [
-        #     GenericUrdfReacher(urdf="mobilePanda_with_gripper.urdf", mode="vel"),
-        # ]
-        # env: UrdfEnv = UrdfEnv(
-        #     dt=0.01, robots=robots, render=render, num_sub_steps=200,
-        # )
-        action = np.zeros(env.n())
-        ob = env.reset()
-        print(f"Initial observation : {ob}")
-        # urdf_path="/home/jose/anaconda3/envs/PDM/lib/python3.10/site-packages/robotmodels/mobilePanda/urdf/mobilePanda_with_gripper.urdf"
-        # robot = URDF.load(urdf_path)
+    
+    def run_panda_arm(self):
+        action = np.zeros(self.n_actions)
         
-        # range_joints=range(len(robot.actuated_joints)-3)
-        # joints=[]
-        # print(robot.actuated_joints[0])
-        # joints_class = custom_URDF()
-        # joints_class.create_list()
+        file_path_axis = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_axis.pickle')
+        file_path_origin = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_origin.pickle')
 
-        # for x in range_joints:
-        #     print("X.",x)
-        #     joint=robot.actuated_joints[x+3]
-        #     # joints.append(joint)
-        #     joint_temp = custom_URDF(joint.origin,joint.axis)
-        #     joints_class.add_joint(joint_temp)
-
-
-        # joints_list= joints_class.get_joints()
-        
-        file_path = 'joints.pickle'
-
-        # with open(file_path, 'wb') as file:
-        #     # Save the joints
-        #     pickle.dump(joints_list, file)
-
-        # loaded_data = None
-
-        with open(file_path, 'rb') as file:
+        joints_class = custom_URDF()
+        joints_class.create_list()
+        with open(file_path_origin, 'rb') as file:
             # Load the joinst data
-            joints_list = pickle.load(file)
+            joints_origin_list_loaded = pickle.load(file)
 
+        with open(file_path_axis, 'rb') as file:
+            # Load the joinst data
+            joints_axis_list_loaded = pickle.load(file)
 
-        print("Loaded Data:\n", joints_list[3].origin)
+        for x in range(len(joints_origin_list_loaded)):
+            joint_temp = custom_URDF(joints_origin_list_loaded[x],joints_axis_list_loaded[x])
+            joints_class.add_joint(joint_temp)
 
-        # print(joints[3].origin)
-        
-        # print(joints_list[3].origin)
-        input("Done?")
-        ob, *_ = env.step(action) 
-        
-        current_xyz=compute_forward_kinematics(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))
+        joints_list = joints_class.get_joints()
+    
+        current_xyz = self.compute_forward_kinematics(joints_list, self.arm_current_pos)
+        target_xyz = self.arm_trajectory[self.arm_waypoint]
 
         print(np.round(current_xyz))
         history = []
-        actions_to_send=np.zeros(env.n())
+        actions_to_send=np.zeros(self.n_actions)
         max_velocity = 0.5
-        for i in range(n_steps):
-            if (np.linalg.norm(target_xyz - current_xyz) > 0.01): 
-            
-                error_xyz = target_xyz - current_xyz
-                desired_velocity_xyz = 1.0 * error_xyz  
-
-                if np.linalg.norm(desired_velocity_xyz) > max_velocity:
-                    desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * max_velocity
-                desired_velocity = np.hstack((desired_velocity_xyz, np.zeros(3))) 
-            
-                J= compute_jacobian(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4), current_xyz)
-
-                joint_velocities = np.linalg.pinv(J) @ desired_velocity # Use pseudoinverse to solve
-
-                actions_to_send=joint_velocities
-                
-            else:
-
-                actions_to_send=np.zeros(env.n())
-                
-            "These are the instructions to move the arm"
-            for x in range(len(joints_list)-2):      
-                    action[x+3]=actions_to_send[x]
-            "This what moves the arm"
-            ob, *_ = env.step(action) 
-            current_xyz = compute_forward_kinematics(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))   
-            history.append(ob)
-        env.close()
-
+        # for i in range(n_steps):
+        if (np.linalg.norm(target_xyz - current_xyz) > 0.01): 
         
+            error_xyz = target_xyz - current_xyz
+            desired_velocity_xyz = 1.0 * error_xyz  
 
-        return history
-'''
+            if np.linalg.norm(desired_velocity_xyz) > max_velocity:
+                desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * max_velocity
+            desired_velocity = np.hstack((desired_velocity_xyz, np.zeros(3))) 
+        
+            J= self.compute_jacobian(joints_list, self.arm_current_pos, current_xyz)
+
+            joint_velocities = np.linalg.pinv(J) @ desired_velocity # Use pseudoinverse to solve
+
+            actions_to_send=joint_velocities
+        elif (self.base_waypoint < target_xyz.shape[0]-1 ):
+            # If the target waypoint is reached update the target waypoint to the next index
+            self.base_waypoint += 1 
+        else:
+            actions_to_send=np.zeros(self.n_actions)
+            self.arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue
+            
+        # These are the instructions to move the arm
+        for x in range(len(joints_list)-2):      
+                action[x+3]=actions_to_send[x]
+        
+        msg = Float64MultiArray()
+        msg.data = action.astype(np.float64).tolist()
+
+        # Publish cmd_vel msg
+        self.cmd_vel_publisher_.publish(msg)
+        self.get_logger().info('Publishing arm action from control Node: "%s"' % msg.data)
+
 
 def main(args=None):
     # start the control node
@@ -318,10 +298,14 @@ def main(args=None):
             rclpy.spin_once(control_node)
             
             # Only start calculations once all the information is available
-            # if (control_node.ready_for_base()):
-            #     while(not control_node.base_target_reached):
-            #         control_node.run_mobile_base()
-            #         rclpy.spin_once(control_node)
+            if (control_node.ready_for_base()):
+                while(not control_node.base_target_reached):
+                    control_node.run_panda_base()
+                    rclpy.spin_once(control_node)
+            if (control_node.ready_for_arm() and control_node.base_target_reached):
+                while (not control_node.arm_target_reached):
+                    control_node.run_panda_arm()
+                    rclpy.spin_once(control_node)
 
     except (KeyboardInterrupt, ExternalShutdownException):
         pass

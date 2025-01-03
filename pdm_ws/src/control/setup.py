@@ -10,6 +10,10 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/resource', [
+            'resource/joints_axis.pickle',
+            'resource/joints_origin.pickle'
+        ]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -23,4 +27,6 @@ setup(
             'control = control.src.control_node:main'
         ],
     },
+    
+    include_package_data=True,
 )

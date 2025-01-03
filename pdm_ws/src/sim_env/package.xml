@@ -12,7 +12,6 @@
   
   <exec_depend>gymnasium</exec_depend>
   <exec_depend>urdfenvs</exec_depend>
-  <exec_depend>gymnasium</exec_depend>
   <exec_depend>warnings</exec_depend>
   <exec_depend>urdfpy</exec_depend>
   <exec_depend>rclpy</exec_depend>

@@ -58,7 +58,7 @@ class PandaEnvNode(Node):
     def pub_arm_pos(self):
         ob = self.panda_sym.Get_Ob()
         print(ob)
-        current_joint_pos = np.round(ob['robot_0']['joint_state']['position'][3:],4)
+        current_joint_pos = np.round(ob['robot_0']['joint_state']['position'][3:-2],4)
         msg = Float64MultiArray()
         msg.data = current_joint_pos.astype(np.float64).tolist()
 
