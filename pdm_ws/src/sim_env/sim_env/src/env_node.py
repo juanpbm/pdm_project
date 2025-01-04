@@ -77,7 +77,7 @@ def main(args=None):
             panda_env_node.pub_map()
             panda_env_node.pub_base_pos()
             panda_env_node.pub_arm_pos()
-            rclpy.spin_once(panda_env_node)
+            rclpy.spin_once(panda_env_node, timeout_sec=5)
 
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
