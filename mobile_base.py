@@ -1,8 +1,9 @@
 import numpy as np
-from urdfpy import URDF
+import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
+from cubic_spline_definition import trajectory_planning
 
 velocity_limit=2.5
 "This python code should receive all the waypoints necessary to compute the trajectory to this variable"
@@ -27,22 +28,43 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
     
   
     action_to_send=[0,0,0]
+
+    V_max = 0.1  # Maximum velocity (units per time unit)
+    goal_xyz=np.vstack((current_xyz,target_xyz))
+    print(goal_xyz)
+    coordinates_trajectory=trajectory_planning(goal_xyz,V_max,500)
+    print(len(coordinates_trajectory))
+    print(coordinates_trajectory[0])
+    # Plot the original via-points and the interpolated trajectory
+    plt.figure(figsize=(8, 6))
+    plt.plot(goal_xyz[:, 0],goal_xyz[:, 1], 'ro', label='Via-Points')
+    plt.plot(coordinates_trajectory[:,0],coordinates_trajectory[:,1], 'b-', label='Trajectory')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Via-Points Trajectory Profile with Maximum Velocity Constraint')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
     x=0
     for i in range(n_steps):
-        if (np.linalg.norm(target_xyz[x] - current_xyz) > 0.1): 
+        if (len(coordinates_trajectory)>i): 
            
-            error_xyz = target_xyz[x] - current_xyz
-            desired_velocity_xyz = 1*error_xyz
+            error_xyz = coordinates_trajectory[i] - current_xyz[:2]
+            desired_velocity_xyz = 3*error_xyz
             
             action_to_send = desired_velocity_xyz
-
-        elif (x < target_xyz.shape[0]-1 ):
-            x+=1
+        elif(len(coordinates_trajectory)+50>i):   
+            error_xyz = coordinates_trajectory[-1] - current_xyz[:2]
+            desired_velocity_xyz = 3*error_xyz
+            
+            action_to_send = desired_velocity_xyz
         else:
             action_to_send = 0
+            print(current_xyz)
 
         "Action is the variable with the taregt velocities for the robot"
-        action[:3]=action_to_send
+        action[:2]=action_to_send
         "This is what actually gives the command for the robot to move, so I suppose this is what this node should emmit"
         ob, *_ = env.step(action) 
         current_xyz = np.round(ob['robot_0']['joint_state']['position'][:3],4)  
