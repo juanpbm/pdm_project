@@ -46,19 +46,29 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
     plt.grid(True)
     plt.show()
 
-    x=0
+    Kp=5
+    Kd=2
+    e_prev=[0,0]
+    time_prev=0
     for i in range(n_steps):
         if (len(coordinates_trajectory)>i): 
            
             error_xyz = coordinates_trajectory[i] - current_xyz[:2]
-            desired_velocity_xyz = 3*error_xyz
-            
+            Derivative_error=Kd*(error_xyz - e_prev)/(i+1 - time_prev)
+            desired_velocity_xyz = Kp*error_xyz + Derivative_error
             action_to_send = desired_velocity_xyz
-        elif(len(coordinates_trajectory)+50>i):   
+
+            e_prev = error_xyz
+            time_prev = i
+        elif(len(coordinates_trajectory)+100>i):   
             error_xyz = coordinates_trajectory[-1] - current_xyz[:2]
-            desired_velocity_xyz = 3*error_xyz
-            
+            Derivative_error=Kd*(error_xyz - e_prev)/(i+1 - time_prev)
+            desired_velocity_xyz = Kp*error_xyz + Derivative_error
             action_to_send = desired_velocity_xyz
+
+            e_prev = error_xyz
+            time_prev = i
+            
         else:
             action_to_send = 0
             print(current_xyz)
