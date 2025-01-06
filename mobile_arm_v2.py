@@ -24,7 +24,7 @@ velocity_limit=2.5
 target_xyz = np.array([0.6, 1, 0.5])
 target_orientation = np.array([1, 0, 0]) # Euler Angles
 
-
+###############    NEW  ########################
 def calc_rot_error(reference, actual):
 
         Actual_Matrix=actual[:3, :3]
@@ -55,7 +55,16 @@ def matrix_to_euler(matrix):
     pitch = np.arctan2(-matrix[2, 0], np.sqrt(matrix[2, 1]**2 + matrix[2, 2]**2)) 
     yaw = np.arctan2(matrix[1, 0], matrix[0, 0]) 
     return np.array([roll, pitch, yaw])
-      
+
+def pseudo_jacobian(J, desired_velocity, damping_factor=0.1): 
+    JJT = J @ J.T 
+    damping_matrix = damping_factor**2 * np.eye(JJT.shape[0]) 
+    pseudo_inverse = J.T @ np.linalg.inv(JJT + damping_matrix) 
+
+    return pseudo_inverse @ desired_velocity
+
+###############   END OF NEW  ########################     
+
 def revolute_transform(axis, angle):
     """Compute the rotation matrix for a revolute joint."""
     cosine= np.cos(angle) 
@@ -83,8 +92,12 @@ def compute_forward_kinematics(robot_joints, joint_angles):
 
         T = T @ joint_transform  # Multiply transformations
 
-    position = T[:3, 3]   
+    position = T[:3, 3]  
+
+    ###############   NEW  ########################   
     orientation_euler = matrix_to_euler(T[:3, :3])
+    ###############   END OF NEW  (CAREFUL, NEW PARAMETER TO RETURN) ########################  
+
     return position, orientation_euler
 
 
@@ -111,12 +124,7 @@ def compute_jacobian(robot_joints, joint_angles, p_end):
 
     return np.array(J).T  # Convert to numpy array and transpose
 
-def damped_least_squares(J, desired_velocity, damping_factor=0.1): 
-    JJT = J @ J.T 
-    damping_matrix = damping_factor**2 * np.eye(JJT.shape[0]) 
-    pseudo_inverse = J.T @ np.linalg.inv(JJT + damping_matrix) 
 
-    return pseudo_inverse @ desired_velocity
 
 def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
     robots = [
@@ -146,16 +154,12 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
 
     joints_list= joints_class.get_joints()
 
-    print("Loaded 2:\n", joints_origin_list_loaded[3])
-    print("Loaded Data:\n", joints_list[3].origin)
-    print("Type", type(joints_list))
-    # print(joints[3].origin)
-    
-    # print(joints_list[3].origin)
-    # input("Done?")
     ob, *_ = env.step(action) 
     
+    ###############   NEW PART ########################  
     current_xyz, current_orientation =compute_forward_kinematics(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4))
+    Kp=1.0
+    ###############   END OF NEW  PART ########################  
 
     print(np.round(current_xyz))
     history = []
@@ -165,23 +169,26 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
         if (np.linalg.norm(target_xyz - current_xyz) > 0.01): 
            
             error_xyz = target_xyz - current_xyz
-            desired_velocity_xyz = 1.0 * error_xyz  
+            desired_velocity_xyz = Kp * error_xyz  
 
             if np.linalg.norm(desired_velocity_xyz) > max_velocity:
                 desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * max_velocity
             
+            ###############   NEW   ######################## 
+
             # Orientation error 
             current_orientation_matrix = euler_to_matrix(current_orientation) 
             target_orientation_matrix = euler_to_matrix(target_orientation) 
-            # orientation_error_matrix = np.dot(target_orientation_matrix, current_orientation_matrix.T) 
+          
             orientation_error=calc_rot_error(target_orientation_matrix, current_orientation_matrix)
-            # orientation_error = matrix_to_euler(orientation_error_matrix) 
-            desired_velocity_orientation = 1.0 * orientation_error
+            desired_velocity_orientation = Kp * orientation_error
+            
+            ###############   END OF NEW  PART ######################## 
             
             desired_velocity = np.hstack((desired_velocity_xyz, desired_velocity_orientation)) 
            
             J= compute_jacobian(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4), current_xyz)
-            joint_velocities = damped_least_squares(J, desired_velocity)
+            joint_velocities = pseudo_jacobian(J, desired_velocity)
 
             actions_to_send=joint_velocities
             
