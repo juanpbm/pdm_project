@@ -5,11 +5,9 @@ from urdfenvs.urdf_common.urdf_env import UrdfEnv
 from mpscenes.obstacles.sphere_obstacle import SphereObstacle
 from mpscenes.obstacles.box_obstacle import BoxObstacle
 import pybullet as p
-from urdfpy import URDF
 import cv2
 import matplotlib.pyplot as plt
-from urdfenvs.sensors.grid_sensor import GridSensor
-from urdfenvs.sensors.occupancy_sensor import OccupancySensor
+
 wall_length = 10
 
 def generate_occupancy_grid(image, grid_resolution=0.1):
@@ -24,21 +22,27 @@ def generate_occupancy_grid(image, grid_resolution=0.1):
         np.ndarray: Occupancy grid with values (-1: unknown, 0: free, 100: occupied).
     """
     # Convert the image to grayscale
-    gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    plt.imshow(gray_image)
+    # gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    print(image[500,500])
+    print(image.shape)
+    # Blanco 255 x3
+    # Azul [206 213 223]
+    plt.imshow(image)
     plt.show()
 
     # Threshold the image to classify areas
-    _, obstacle_mask = cv2.threshold(gray_image, 100, 255, cv2.THRESH_BINARY)
+    # _, obstacle_mask = cv2.threshold(gray_image, 100, 255, cv2.THRESH_BINARY)
 
     # Determine grid size based on image dimensions and resolution
-    grid_height, grid_width = gray_image.shape
+    grid_width = image.shape[1]
+    grid_height= image.shape[0]
     occupancy_grid = np.full((grid_height, grid_width), -1, dtype=int)  # Initialize as unknown (-1)
 
     # Map obstacle mask to grid values
     for i in range(grid_height):
         for j in range(grid_width):
-            if obstacle_mask[i, j] == 255:  # White -> obstacle
+            if (np.array_equal(image[i, j], np.array([255, 255, 255])) or np.array_equal(image[i, j], np.array([206, 213, 223]))):
+                # White -> obstacle
                 occupancy_grid[i, j] = 100  # Occupied
             else:  # Black -> free space
                 occupancy_grid[i, j] = 0  # Free space
@@ -243,15 +247,7 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
         env.add_obstacle(wall_obstacles[i])
     
 
-    occupancy_sensor = OccupancySensor(
-        limits=np.array([[-3, -3], [3, 3], [0, 3]]),  # Adjust limits as needed
-        resolution=0.1,  # Adjust resolution as needed
-        interval=10,
-        variance=0.1,
-        plotting_interval=50,
-        physics_engine_name="pybullet",
-    )
-
+ 
 
     action = np.zeros(env.n())
     
@@ -262,32 +258,8 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
 
     history = []
     ob, *_ = env.step(action)
-    obstacles=env.get_obstacles()
-    # print(obstacles)
-    # occupancy_grid = occupancy_sensor.sense(
-    #         robot=robots[0],
-    #         obstacles=obstacles,  # Assumes env has an obstacles attribute
-    #         goals={},  # Replace with actual goals if applicable
-    #         t=100,
-    #     )
-    # print_occupancy_map(occupancy_grid)
-    # input("Finished? ")
-    for i in range(n_steps):
-        print(f"Observation {i}: {np.round(ob['robot_0']['joint_state']['position'],2)}")
-        
-        occupancy_grid = occupancy_sensor.sense(
-            robot=robots[0],
-            obstacles=obstacles,  # Assumes env has an obstacles attribute
-            goals={},  # Replace with actual goals if applicable
-            t=i * env.dt,
-        )
-
-        if i % occupancy_sensor._plotting_interval == 0:
-            occupancy_sensor.update_occupancy_visualization()
-
-        # # Store occupancy grid in the history for further processing if needed
-        # history.append(occupancy_grid)
-    print_occupancy_map(occupancy_grid)
+    # obstacles=env.get_obstacles()
+    
     image = capture_overhead_image(
         env,
     width=800,

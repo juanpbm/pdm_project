@@ -130,6 +130,7 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
     robots = [
         GenericUrdfReacher(urdf="mobilePanda_with_gripper.urdf", mode="vel"),
     ]
+    
     env: UrdfEnv = UrdfEnv(
         dt=0.01, robots=robots, render=render, num_sub_steps=200,
     )
@@ -184,7 +185,7 @@ def run_mobile_reacher(n_steps=10000, render=False, goal=True, obstacles=True):
             desired_velocity_orientation = Kp * orientation_error
             
             ###############   END OF NEW  PART ######################## 
-            
+
             desired_velocity = np.hstack((desired_velocity_xyz, desired_velocity_orientation)) 
            
             J= compute_jacobian(joints_list, np.round(ob['robot_0']['joint_state']['position'][3:-2],4), current_xyz)
