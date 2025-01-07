@@ -120,24 +120,24 @@ class Controller:
         e_prev=[0,0]
         time_prev=0
   
-        if (len(coordinates_trajectory)>i): 
+        # if (len(coordinates_trajectory)>i): 
            
-            error_xyz = coordinates_trajectory[i] - current_xyz[:2]
-            Derivative_error=Kd*(error_xyz - e_prev)/(i+1 - time_prev)
-            desired_velocity_xyz = Kp*error_xyz + Derivative_error
-            action_to_send = desired_velocity_xyz
+        #     error_xyz = coordinates_trajectory[i] - current_xyz[:2]
+        #     Derivative_error=Kd*(error_xyz - e_prev)/(i+1 - time_prev)
+        #     desired_velocity_xyz = Kp*error_xyz + Derivative_error
+        #     action_to_send = desired_velocity_xyz
 
-            e_prev = error_xyz
-            time_prev = i
+        #     e_prev = error_xyz
+        #     time_prev = i
             
-        elif(len(coordinates_trajectory)+100>i):   
-            error_xyz = coordinates_trajectory[-1] - current_xyz[:2]
-            Derivative_error=Kd*(error_xyz - e_prev)/(i+1 - time_prev)
-            desired_velocity_xyz = Kp*error_xyz + Derivative_error
-            action_to_send = desired_velocity_xyz
+        # elif(len(coordinates_trajectory)+100>i):   
+        #     error_xyz = coordinates_trajectory[-1] - current_xyz[:2]
+        #     Derivative_error=Kd*(error_xyz - e_prev)/(i+1 - time_prev)
+        #     desired_velocity_xyz = Kp*error_xyz + Derivative_error
+        #     action_to_send = desired_velocity_xyz
 
-            e_prev = error_xyz
-            time_prev = i
+        #     e_prev = error_xyz
+        #     time_prev = i
         
         if (np.linalg.norm(target_xyz - current_xyz) > 0.1): 
             # Controller to calculate velocities 
@@ -297,7 +297,8 @@ class Controller:
             # Limit the actions to the max velocity of the robot
             if np.linalg.norm(desired_velocity_arm) > self.arm_max_vel:
                 desired_velocity_arm = desired_velocity_arm / np.linalg.norm(desired_velocity_arm) * self.arm_max_vel
-            desired_velocity_arm = np.hstack((desired_velocity_arm, np.zeros(3))) 
+
+            # desired_velocity_arm = np.hstack((desired_velocity_arm, np.zeros(3))) 
         
             # Orientation error 
             current_orientation_matrix = self.euler_to_matrix(current_orientation) 
