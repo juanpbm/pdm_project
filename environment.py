@@ -41,9 +41,8 @@ def generate_occupancy_grid(image, grid_resolution=0.1):
     # Map obstacle mask to grid values
     for i in range(grid_height):
         for j in range(grid_width):
-            if (np.array_equal(image[i, j], np.array([255, 255, 255])) 
+            if (np.all(image[i, j] >= np.array([225, 225, 225])) 
                 or np.array_equal(image[i, j], np.array([206, 213, 223])) 
-                or np.array_equal(image[i, j], np.array([277, 277, 277]))
                 or np.array_equal(image[i, j], np.array([154, 177, 213]))):
                 # Black -> obstacle
                 occupancy_grid[i, j] = 0  # Free
