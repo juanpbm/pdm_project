@@ -41,35 +41,16 @@ def generate_occupancy_grid(image, grid_resolution=0.1):
     # Map obstacle mask to grid values
     for i in range(grid_height):
         for j in range(grid_width):
-            if (np.array_equal(image[i, j], np.array([255, 255, 255])) or np.array_equal(image[i, j], np.array([206, 213, 223]))):
-                # White -> obstacle
-                occupancy_grid[i, j] = 100  # Occupied
-            else:  # Black -> free space
-                occupancy_grid[i, j] = 0  # Free space
-
+            if (np.array_equal(image[i, j], np.array([255, 255, 255])) 
+                or np.array_equal(image[i, j], np.array([206, 213, 223])) 
+                or np.array_equal(image[i, j], np.array([277, 277, 277]))
+                or np.array_equal(image[i, j], np.array([154, 177, 213]))):
+                # Black -> obstacle
+                occupancy_grid[i, j] = 0  # Free
+            else:  # White -> free space
+                occupancy_grid[i, j] = 100  # Ocupied
+    print(occupancy_grid.shape)
     return occupancy_grid
-
-
-def print_occupancy_map(occupancy_map):
-    # Assuming occupancy_map is a 3D numpy array
-    # We'll collapse it to 2D for visualization purposes
-    occupancy_map_2d = occupancy_map
-    
-    # Create the plot
-    plt.figure(figsize=(6, 6))
-    
-    # Display the occupancy map with the colormap set to 'gray'
-    # White (1) will be free space, Black (0) will be obstacles or unknown
-    plt.imshow(occupancy_map_2d, cmap='gray', origin='lower')
-    
-    # Add title and axes labels for clarity
-    plt.title('Occupancy Map')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    
-    # Show the plot
-    plt.show()
-
 
 
 def visualize_occupancy_grid(occupancy_grid):
@@ -79,7 +60,7 @@ def visualize_occupancy_grid(occupancy_grid):
     Parameters:
         occupancy_grid (np.ndarray): Occupancy grid to visualize.
     """
-    plt.imshow(occupancy_grid, cmap="gray", origin="lower")
+    plt.imshow(occupancy_grid, cmap="gray_r", vmin=0, vmax=100)
     plt.colorbar(label="Occupancy")
     plt.title("Occupancy Grid")
     plt.show()
