@@ -2,11 +2,13 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 import numpy as np
-from urdfenvs.robots.generic_urdf import GenericUrdfReacher
-from urdfenvs.urdf_common.urdf_env import UrdfEnv
+from std_msgs.msg import Float64MultiArray, MultiArrayDimension, String
+import cv2 as cv
+from motion_planning.src.motion_planner import RRT
 
-from std_msgs.msg import Float64MultiArray, MultiArrayDimension
-from std_msgs.msg import String
+from ament_index_python.packages import get_package_share_directory
+import os
+
 
 class MotionPlannerNode(Node):
     def __init__(self):
@@ -25,10 +27,8 @@ class MotionPlannerNode(Node):
     def map_callback(self, msg):
         self.get_logger().info('Got in Motion Planning Node sub: "%s"' % msg.data)
 
-        # TODO: compute trajectory
-
+        base_trajectory = self.temp_map_rrt()
         # Dummy trajectory. The computed trajectory should return something similar
-        base_trajectory = np.array([[1, 1, 0], [2, 2, 0], [1, 2, 0], [0, 0, 0]], dtype=float) 
         arm_trajectory = np.array([[0.6, 0, 0.5]])
 
         # Create array message with the base trajectory information
@@ -58,6 +58,65 @@ class MotionPlannerNode(Node):
 
     #Functions that use the motion planning class to compute the RRT
 
+    def temp_map_rrt(self):
+        file_path_img = os.path.join(os.path.dirname(get_package_share_directory('motion_planning')), 'motion_planning', 'resource', 'second.jpg')
+        img = cv.imread(file_path_img)
+        rrt = RRT()
+        # Properties of an Image
+        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        ret,thresh = cv.threshold(gray,127,255,0)
+
+        size = img.shape
+        start = (50,50)
+        end = (325,450)
+        rad = 10
+
+        img_print = img.copy()
+        image = img.copy()
+
+        kernel = np.ones((8, 8), np.uint8) 
+    
+        # Using cv2.erode() method  
+        image = cv.erode(thresh, kernel, cv.BORDER_REFLECT)  
+
+        # Draw a circle of red color of thickness -1 px 
+        img_print = cv.circle(img_print, (start[1],start[0]), 3, (100,255,255), -1) 
+
+        # Draw a circle of red color of thickness -1 px 
+        img_print = cv.circle(img_print, (end[1],end[0]), rad, (255,0,0), 1) 
+
+        [V_E, img_print] = rrt.RRT_star(np.squeeze(image), start, end,rad,size,img_print)
+        V_E = np.asarray(V_E)
+        for i in V_E:
+            #print(V_E.shape)
+            if(i.parent != (None,None)):
+                img_print = cv.line(img_print, (i.child[1],i.child[0]), (i.parent[1],i.parent[0]), (255,0,255), 1)
+
+
+        V_E_shortest = rrt.find_shortest([V_E[-1]],V_E,V_E[-1])
+
+        V_E_shortest_smoothed = rrt.smooth_path(V_E_shortest, np.squeeze(image))
+        message = []
+        # Draw the smoothed path
+        j = len(V_E_shortest_smoothed) - 1
+        for i in range(len(V_E_shortest_smoothed) - 1):
+            p1 = V_E_shortest_smoothed[i].child
+            p2 = V_E_shortest_smoothed[i + 1].child
+            if(i == 0):
+                message.append([V_E_shortest_smoothed[j].child[0]/100, V_E_shortest_smoothed[j].child[1]/100, 0])
+
+            message.append([V_E_shortest_smoothed[j-1].child[0]/100, V_E_shortest_smoothed[j-1].child[1]/100, 0])
+            j = j-1
+
+            img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  # Smoothed path in yellow
+
+        # print(message)
+        # Display the Binary Image
+        cv.imshow("Binary Image", img_print)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
+        return np.array(message)
+    
 def main(args=None):
     # start the motion planning node
     try:
