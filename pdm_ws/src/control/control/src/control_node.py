@@ -34,6 +34,7 @@ class ControlNode(Node):
         self.base_current_pos = np.empty(0)
         self.arm_current_pos = np.empty(0)
         self.base_trajectory = np.empty(0)
+        self.base_trajectory_quadratic = np.empty(0)
         self.arm_trajectory = np.empty(0)
         self.base_target_reached = False
         self.arm_target_reached = False
@@ -58,7 +59,10 @@ class ControlNode(Node):
             # Reset progress variables
             self.base_waypoint = 0
             self.base_target_reached = False
-        print(self.base_trajectory)
+            temp_trajectory=np.vstack((self.base_current_pos,self.base_trajectory))
+            self.base_trajectory_quadratic=self.controller.trajectory_planning(temp_trajectory,self.controller.base_max_vel, 0.01)
+        
+        print(self.base_trajectory_quadratic)
 
     def base_pos_callback(self, msg):
         self.get_logger().info('Got in Control Node base pos sub: "%s"' % msg)
@@ -91,7 +95,7 @@ class ControlNode(Node):
         print(self.arm_current_pos)
 
     def move_base(self):
-        action, self.base_target_reached, self.base_waypoint = self.controller.run_panda_base(self.base_current_pos, self.base_trajectory, self.base_waypoint, self.base_target_reached)
+        action, self.base_target_reached, self.base_waypoint = self.controller.run_panda_base(self.base_current_pos, self.base_trajectory_quadratic, self.base_waypoint, self.base_target_reached)
 
         # Construct the cmd_vel msg for the base
         msg = Float64MultiArray()

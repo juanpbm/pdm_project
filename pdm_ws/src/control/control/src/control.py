@@ -23,8 +23,88 @@ class Controller:
     def __init__(self):
         # Robot constants
         self.n_actions = 12 # Number of actuators only the first 3 are used by the base
-        self.base_max_vel = 2.5 # limit of the robot TODO: get exact value
+        self.base_max_vel = 0.5 # limit of the robot TODO: get exact value
         self.arm_max_vel = 0.5
+        self.Kp=5
+        self.Kd=2
+        self.e_prev=[0,0]
+        self.time_prev=0
+
+    def trajectory_planning(self, via_points,V_max, desired_dt):
+        # Extract x and y coordinates of via-points
+        x = via_points[:, 0]
+        y = via_points[:, 1]
+        n = len(x)
+
+        # Calculate distances between via-points
+        distances = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
+
+        # Calculate minimum time intervals based on maximum velocity
+        min_time_intervals = distances / V_max
+
+        # Ensure cumulative time intervals
+        times = np.zeros(n)
+        times[1:] = np.cumsum(min_time_intervals)
+
+        # Step lengths in time
+        h = np.diff(times)
+
+        # Solve for the coefficients of the cubic spline
+        A = np.zeros((n, n))
+        bx = np.zeros(n)
+        by = np.zeros(n)
+
+        # Natural spline conditions
+        A[0, 0] = 1
+        A[-1, -1] = 1
+
+        # Setting up the system of equations for x and y coordinates
+        for i in range(1, n-1):
+            A[i, i-1] = h[i-1]
+            A[i, i] = 2 * (h[i-1] + h[i])
+            A[i, i+1] = h[i]
+            bx[i] = 3 * ((x[i+1] - x[i]) / h[i] - (x[i] - x[i-1]) / h[i-1])
+            by[i] = 3 * ((y[i+1] - y[i]) / h[i] - (y[i] - y[i-1]) / h[i-1])
+
+        # Solve for the second derivatives
+        second_derivatives_x = np.linalg.solve(A, bx)
+        second_derivatives_y = np.linalg.solve(A, by)
+
+        # Calculate the spline coefficients for x and y
+        splines_x = []
+        splines_y = []
+        for i in range(n-1):
+            ax = (second_derivatives_x[i+1] - second_derivatives_x[i]) / (6 * h[i])
+            bx = second_derivatives_x[i] / 2
+            cx = (x[i+1] - x[i]) / h[i] - (h[i] * (2 * second_derivatives_x[i] + second_derivatives_x[i+1])) / 6
+            dx = x[i]
+
+            ay = (second_derivatives_y[i+1] - second_derivatives_y[i]) / (6 * h[i])
+            by = second_derivatives_y[i] / 2
+            cy = (y[i+1] - y[i]) / h[i] - (h[i] * (2 * second_derivatives_y[i] + second_derivatives_y[i+1])) / 6
+            dy = y[i]
+
+            splines_x.append((ax, bx, cx, dx))
+            splines_y.append((ay, by, cy, dy))
+
+        # Generate points along the spline
+        total_time = times[-1] 
+        time_new =np.arange(0,total_time, desired_dt)
+        x_new = np.zeros_like(time_new)
+        y_new = np.zeros_like(time_new)
+
+        coordinates_trajectory=[]
+        for j in range(len(time_new)):
+            for i in range(n-1):
+                if times[i] <= time_new[j] <= times[i+1]:
+                    dt = time_new[j] - times[i]
+                    ax, bx, cx, dx = splines_x[i]
+                    ay, by, cy, dy = splines_y[i]
+                    x_new[j] = ax * dt**3 + bx * dt**2 + cx * dt + dx
+                    y_new[j] = ay * dt**3 + by * dt**2 + cy * dt + dy
+                    coordinates_trajectory.append([x_new[j],y_new[j]])
+
+        return np.array(coordinates_trajectory)
 
 
     def trajectory_planning(self, via_points,V_max, desired_dt):
@@ -108,17 +188,16 @@ class Controller:
         action = np.zeros(self.n_actions, dtype=float)
         
         # Set current position and target
-        target_xyz = base_trajectory[base_waypoint]
-        action_to_send = [0.0,0.0,0.0]
+        
+        # action_to_send = [0.0,0.0,0.0]
+        action_to_send = [0.0,0.0]
 
-        V_max = 10 # Maximum velocity (units per time unit)
-        dt=0.01
-        trajectory_xyz=np.vstack((current_xyz,target_xyz))
-        coordinates_trajectory=self.trajectory_planning(trajectory_xyz,V_max, dt)
-        Kp=5
-        Kd=2
-        e_prev=[0,0]
-        time_prev=0
+
+        # V_max = 10 # Maximum velocity (units per time unit)
+        # dt=0.01
+        # trajectory_xyz=np.vstack((current_xyz,target_xyz))
+        # coordinates_trajectory=self.trajectory_planning(trajectory_xyz,V_max, dt)
+       
   
         # if (len(coordinates_trajectory)>i): 
            
@@ -139,29 +218,70 @@ class Controller:
         #     e_prev = error_xyz
         #     time_prev = i
         
-        if (np.linalg.norm(target_xyz - current_xyz) > 0.1): 
-            # Controller to calculate velocities 
-            # TODO: PID, cubic, quintic
-            error_xyz = target_xyz - current_xyz
-            desired_velocity_xyz = 1 * error_xyz
+        # if (np.linalg.norm(target_xyz - current_xyz) > 0.1): 
+        #     # Controller to calculate velocities 
+        #     # TODO: PID, cubic, quintic
+        #     error_xyz = target_xyz - current_xyz
+        #     desired_velocity_xyz = 1 * error_xyz
+
+        # V_max = 10 # Maximum velocity (units per time unit)
+        # dt=0.01
+        # trajectory_xyz=np.vstack((current_xyz,target_xyz))
+        # coordinates_trajectory=self.trajectory_planning(trajectory_xyz,V_max, dt)
+        
+  
+        if (len(base_trajectory)>base_waypoint): 
+           
+            error_xyz = base_trajectory[base_waypoint] - current_xyz[:2]
+            Derivative_error=self.Kd*(error_xyz - self.e_prev)/(base_waypoint+1 - self.time_prev)
+            desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
+
             action_to_send = desired_velocity_xyz
 
-            # Limit the actions to the max velocity of the robot
-            # TODO: Check and match with arm
-            for vel in action_to_send:
-                if vel > self.base_max_vel:
-                    vel = self.base_max_vel
-        elif (base_waypoint < base_trajectory.shape[0] - 1):
-            # If the target waypoint is reached update the target waypoint to the next index
+            self.e_prev = error_xyz
+            self.time_prev = base_waypoint
+            base_waypoint += 1
+            
+        elif(len(base_trajectory)+100>base_waypoint):   
+            error_xyz = base_trajectory[-1] - current_xyz[:2]
+            Derivative_error=self.Kd*(error_xyz - self.e_prev)/(base_waypoint+1 - self.time_prev)
+            desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
+            action_to_send = desired_velocity_xyz
+
+            self.e_prev = error_xyz
+            self.time_prev = base_waypoint
             base_waypoint += 1
         else:
             # If all waypoints have been reached stop the base and update the target reached variable
-            action_to_send = [0,0,0]
+            action_to_send = [0,0]
             base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
 
+        # if (np.linalg.norm(target_xyz - current_xyz) > 0.1): 
+        #     # Controller to calculate velocities 
+        #     # TODO: PID, cubic, quintic
+        #     error_xyz = target_xyz - current_xyz
+        #     desired_velocity_xyz = 1 * error_xyz
+        #     action_to_send = desired_velocity_xyz
 
+        #     # Limit the actions to the max velocity of the robot
+        #     # TODO: Check and match with arm
+        #     for vel in action_to_send:
+        #         if vel > self.base_max_vel:
+        #             vel = self.base_max_vel
+        # elif (base_waypoint < base_trajectory.shape[0] - 1):
+        #     # If the target waypoint is reached update the target waypoint to the next index
+        #     base_waypoint += 1
+        # else:
+        #     # If all waypoints have been reached stop the base and update the target reached variable
+        #     action_to_send = [0,0,0]
+        #     base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
+
+        for vel in action_to_send:
+                if vel > self.base_max_vel:
+                    vel = self.base_max_vel
         # Action is the variable with the target velocities for the robot
-        action[:3] = action_to_send
+        # action[:3] = action_to_send
+        action[:2] = action_to_send
         return action, base_target_reached, base_waypoint
     
     def revolute_transform(self, axis, angle):
