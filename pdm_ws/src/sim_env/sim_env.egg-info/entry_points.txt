@@ -1,0 +1,2 @@
+[console_scripts]
+panda_env = sim_env.src.env_node:main
