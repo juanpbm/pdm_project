@@ -27,17 +27,19 @@ class Controller:
         self.arm_max_vel = 0.5
         self.Kp=5
         self.Kd=2
-        self.e_prev=[0,0]
+        self.e_prev=[0,0,0]
         self.time_prev=0
 
-    def trajectory_planning(self, via_points,V_max, desired_dt):
-        # Extract x and y coordinates of via-points
+    def cubic_spline_interpolation(self,via_points,V_max, desired_dt):
+        
+        # Extract x, y, and z coordinates of via-points
         x = via_points[:, 0]
         y = via_points[:, 1]
+        z = via_points[:, 2]
         n = len(x)
 
         # Calculate distances between via-points
-        distances = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
+        distances = np.sqrt(np.diff(x)**2 + np.diff(y)**2 + np.diff(z)**2)
 
         # Calculate minimum time intervals based on maximum velocity
         min_time_intervals = distances / V_max
@@ -53,135 +55,72 @@ class Controller:
         A = np.zeros((n, n))
         bx = np.zeros(n)
         by = np.zeros(n)
+        bz = np.zeros(n)
 
         # Natural spline conditions
         A[0, 0] = 1
         A[-1, -1] = 1
 
-        # Setting up the system of equations for x and y coordinates
-        for i in range(1, n-1):
-            A[i, i-1] = h[i-1]
-            A[i, i] = 2 * (h[i-1] + h[i])
-            A[i, i+1] = h[i]
-            bx[i] = 3 * ((x[i+1] - x[i]) / h[i] - (x[i] - x[i-1]) / h[i-1])
-            by[i] = 3 * ((y[i+1] - y[i]) / h[i] - (y[i] - y[i-1]) / h[i-1])
+        # Setting up the system of equations for x, y, and z coordinates
+        for i in range(1, n - 1):
+            A[i, i - 1] = h[i - 1]
+            A[i, i] = 2 * (h[i - 1] + h[i])
+            A[i, i + 1] = h[i]
+            bx[i] = 3 * ((x[i + 1] - x[i]) / h[i] - (x[i] - x[i - 1]) / h[i - 1])
+            by[i] = 3 * ((y[i + 1] - y[i]) / h[i] - (y[i] - y[i - 1]) / h[i - 1])
+            bz[i] = 3 * ((z[i + 1] - z[i]) / h[i] - (z[i] - z[i - 1]) / h[i - 1])
 
         # Solve for the second derivatives
         second_derivatives_x = np.linalg.solve(A, bx)
         second_derivatives_y = np.linalg.solve(A, by)
+        second_derivatives_z = np.linalg.solve(A, bz)
 
-        # Calculate the spline coefficients for x and y
+        # Calculate the spline coefficients for x, y, and z
         splines_x = []
         splines_y = []
-        for i in range(n-1):
-            ax = (second_derivatives_x[i+1] - second_derivatives_x[i]) / (6 * h[i])
+        splines_z = []
+        for i in range(n - 1):
+            ax = (second_derivatives_x[i + 1] - second_derivatives_x[i]) / (6 * h[i])
             bx = second_derivatives_x[i] / 2
-            cx = (x[i+1] - x[i]) / h[i] - (h[i] * (2 * second_derivatives_x[i] + second_derivatives_x[i+1])) / 6
+            cx = (x[i + 1] - x[i]) / h[i] - (h[i] * (2 * second_derivatives_x[i] + second_derivatives_x[i + 1])) / 6
             dx = x[i]
 
-            ay = (second_derivatives_y[i+1] - second_derivatives_y[i]) / (6 * h[i])
+            ay = (second_derivatives_y[i + 1] - second_derivatives_y[i]) / (6 * h[i])
             by = second_derivatives_y[i] / 2
-            cy = (y[i+1] - y[i]) / h[i] - (h[i] * (2 * second_derivatives_y[i] + second_derivatives_y[i+1])) / 6
+            cy = (y[i + 1] - y[i]) / h[i] - (h[i] * (2 * second_derivatives_y[i] + second_derivatives_y[i + 1])) / 6
             dy = y[i]
+
+            az = (second_derivatives_z[i + 1] - second_derivatives_z[i]) / (6 * h[i])
+            bz = second_derivatives_z[i] / 2
+            cz = (z[i + 1] - z[i]) / h[i] - (h[i] * (2 * second_derivatives_z[i] + second_derivatives_z[i + 1])) / 6
+            dz = z[i]
 
             splines_x.append((ax, bx, cx, dx))
             splines_y.append((ay, by, cy, dy))
+            splines_z.append((az, bz, cz, dz))
 
         # Generate points along the spline
-        total_time = times[-1] 
+        total_time = times[-1]
         time_new =np.arange(0,total_time, desired_dt)
         x_new = np.zeros_like(time_new)
         y_new = np.zeros_like(time_new)
+        z_new = np.zeros_like(time_new)
 
-        coordinates_trajectory=[]
+        coordinates_trajectory = []
         for j in range(len(time_new)):
-            for i in range(n-1):
-                if times[i] <= time_new[j] <= times[i+1]:
+            for i in range(n - 1):
+                if times[i] <= time_new[j] <= times[i + 1]:
                     dt = time_new[j] - times[i]
                     ax, bx, cx, dx = splines_x[i]
                     ay, by, cy, dy = splines_y[i]
+                    az, bz, cz, dz = splines_z[i]
                     x_new[j] = ax * dt**3 + bx * dt**2 + cx * dt + dx
                     y_new[j] = ay * dt**3 + by * dt**2 + cy * dt + dy
-                    coordinates_trajectory.append([x_new[j],y_new[j]])
+                    z_new[j] = az * dt**3 + bz * dt**2 + cz * dt + dz
+                    coordinates_trajectory.append([x_new[j], y_new[j], z_new[j]])
 
         return np.array(coordinates_trajectory)
 
-
-    def trajectory_planning(self, via_points,V_max, desired_dt):
-        # Extract x and y coordinates of via-points
-        x = via_points[:, 0]
-        y = via_points[:, 1]
-        n = len(x)
-
-        # Calculate distances between via-points
-        distances = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
-
-        # Calculate minimum time intervals based on maximum velocity
-        min_time_intervals = distances / V_max
-
-        # Ensure cumulative time intervals
-        times = np.zeros(n)
-        times[1:] = np.cumsum(min_time_intervals)
-
-        # Step lengths in time
-        h = np.diff(times)
-
-        # Solve for the coefficients of the cubic spline
-        A = np.zeros((n, n))
-        bx = np.zeros(n)
-        by = np.zeros(n)
-
-        # Natural spline conditions
-        A[0, 0] = 1
-        A[-1, -1] = 1
-
-        # Setting up the system of equations for x and y coordinates
-        for i in range(1, n-1):
-            A[i, i-1] = h[i-1]
-            A[i, i] = 2 * (h[i-1] + h[i])
-            A[i, i+1] = h[i]
-            bx[i] = 3 * ((x[i+1] - x[i]) / h[i] - (x[i] - x[i-1]) / h[i-1])
-            by[i] = 3 * ((y[i+1] - y[i]) / h[i] - (y[i] - y[i-1]) / h[i-1])
-
-        # Solve for the second derivatives
-        second_derivatives_x = np.linalg.solve(A, bx)
-        second_derivatives_y = np.linalg.solve(A, by)
-
-        # Calculate the spline coefficients for x and y
-        splines_x = []
-        splines_y = []
-        for i in range(n-1):
-            ax = (second_derivatives_x[i+1] - second_derivatives_x[i]) / (6 * h[i])
-            bx = second_derivatives_x[i] / 2
-            cx = (x[i+1] - x[i]) / h[i] - (h[i] * (2 * second_derivatives_x[i] + second_derivatives_x[i+1])) / 6
-            dx = x[i]
-
-            ay = (second_derivatives_y[i+1] - second_derivatives_y[i]) / (6 * h[i])
-            by = second_derivatives_y[i] / 2
-            cy = (y[i+1] - y[i]) / h[i] - (h[i] * (2 * second_derivatives_y[i] + second_derivatives_y[i+1])) / 6
-            dy = y[i]
-
-            splines_x.append((ax, bx, cx, dx))
-            splines_y.append((ay, by, cy, dy))
-
-        # Generate points along the spline
-        total_time = times[-1] 
-        time_new =np.arange(0,total_time, desired_dt)
-        x_new = np.zeros_like(time_new)
-        y_new = np.zeros_like(time_new)
-
-        coordinates_trajectory=[]
-        for j in range(len(time_new)):
-            for i in range(n-1):
-                if times[i] <= time_new[j] <= times[i+1]:
-                    dt = time_new[j] - times[i]
-                    ax, bx, cx, dx = splines_x[i]
-                    ay, by, cy, dy = splines_y[i]
-                    x_new[j] = ax * dt**3 + bx * dt**2 + cx * dt + dx
-                    y_new[j] = ay * dt**3 + by * dt**2 + cy * dt + dy
-                    coordinates_trajectory.append([x_new[j],y_new[j]])
-
-        return np.array(coordinates_trajectory)
 
     def run_panda_base(self, current_xyz, base_trajectory, base_waypoint, base_target_reached):
 
@@ -232,7 +171,7 @@ class Controller:
   
         if (len(base_trajectory)>base_waypoint): 
            
-            error_xyz = base_trajectory[base_waypoint] - current_xyz[:2]
+            error_xyz = base_trajectory[base_waypoint] - current_xyz[:3]
             Derivative_error=self.Kd*(error_xyz - self.e_prev)/(base_waypoint+1 - self.time_prev)
             desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
 
@@ -243,7 +182,7 @@ class Controller:
             base_waypoint += 1
             
         elif(len(base_trajectory)+100>base_waypoint):   
-            error_xyz = base_trajectory[-1] - current_xyz[:2]
+            error_xyz = base_trajectory[-1] - current_xyz[:3]
             Derivative_error=self.Kd*(error_xyz - self.e_prev)/(base_waypoint+1 - self.time_prev)
             desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
             action_to_send = desired_velocity_xyz
@@ -253,7 +192,7 @@ class Controller:
             base_waypoint += 1
         else:
             # If all waypoints have been reached stop the base and update the target reached variable
-            action_to_send = [0,0]
+            action_to_send = [0,0,0]
             base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
 
         # if (np.linalg.norm(target_xyz - current_xyz) > 0.1): 
@@ -276,12 +215,15 @@ class Controller:
         #     action_to_send = [0,0,0]
         #     base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
 
-        for vel in action_to_send:
-                if vel > self.base_max_vel:
-                    vel = self.base_max_vel
+        # for vel in action_to_send:
+        #         if vel > self.base_max_vel:
+        #             vel = self.base_max_vel
         # Action is the variable with the target velocities for the robot
         # action[:3] = action_to_send
-        action[:2] = action_to_send
+        for i in range(len(action_to_send)):
+                if action_to_send[i] > self.base_max_vel:
+                    action_to_send[i] = self.base_max_vel
+        action[:3] = action_to_send
         return action, base_target_reached, base_waypoint
     
     def revolute_transform(self, axis, angle):
@@ -375,73 +317,112 @@ class Controller:
 
         return pseudo_inverse @ desired_velocity
 
-    def run_panda_arm(self, arm_current_pos, arm_trajectory, arm_waypoint, arm_target_reached):
+    def run_panda_arm(self, arm_current_pos, arm_trajectory, arm_waypoint, arm_target_reached, joints_list):
         action = np.zeros(self.n_actions)
         
-        # path to pikle files containing arm information
-        file_path_axis = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_axis.pickle')
-        file_path_origin = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_origin.pickle')
+        # # path to pikle files containing arm information
+        # file_path_axis = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_axis.pickle')
+        # file_path_origin = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_origin.pickle')
 
-        # Load Arm information
-        joints_class = custom_URDF()
-        joints_class.create_list()
-        with open(file_path_origin, 'rb') as file:
-            # Load the joint origin data
-            joints_origin_list_loaded = pickle.load(file)
+        # # Load Arm information
+        # joints_class = custom_URDF()
+        # joints_class.create_list()
+        # with open(file_path_origin, 'rb') as file:
+        #     # Load the joint origin data
+        #     joints_origin_list_loaded = pickle.load(file)
 
-        with open(file_path_axis, 'rb') as file:
-            # Load the joints axis data
-            joints_axis_list_loaded = pickle.load(file)
+        # with open(file_path_axis, 'rb') as file:
+        #     # Load the joints axis data
+        #     joints_axis_list_loaded = pickle.load(file)
 
-        # Combine joints data
-        for x in range(len(joints_origin_list_loaded)):
-            joint_temp = custom_URDF(joints_origin_list_loaded[x],joints_axis_list_loaded[x])
-            joints_class.add_joint(joint_temp)
+        # # Combine joints data
+        # for x in range(len(joints_origin_list_loaded)):
+        #     joint_temp = custom_URDF(joints_origin_list_loaded[x],joints_axis_list_loaded[x])
+        #     joints_class.add_joint(joint_temp)
 
-        joints_list = joints_class.get_joints()
+        # joints_list = joints_class.get_joints()
     
         # Get current position and trajectory
         current_arm_joint_pos, current_orientation = self.compute_forward_kinematics(joints_list, arm_current_pos)
-        Kp=1.0
-        target_arm_pos = arm_trajectory[arm_waypoint]
         
         target_orientation = np.array([1, 0, 0]) # Euler Angles TODO: where would this come from. 
         actions_to_send = np.zeros(self.n_actions)
 
-        if (np.linalg.norm(target_arm_pos - current_arm_joint_pos) > 0.01): 
-            # Controller to calculate velocities 
-            # TODO: PID, cubic, quinti
-            error_arm_pos = target_arm_pos - current_arm_joint_pos
-            desired_velocity_arm = 1.0 * error_arm_pos  
+        if(len(arm_trajectory)+100>arm_waypoint):
+            if (len(arm_trajectory)>arm_waypoint): 
+            
+                error_xyz = arm_trajectory[arm_waypoint] - current_arm_joint_pos[:3]    
+            else:   
+                error_xyz = arm_trajectory[-1] - current_arm_joint_pos[:3]
+               
 
-            # Limit the actions to the max velocity of the robot
-            if np.linalg.norm(desired_velocity_arm) > self.arm_max_vel:
-                desired_velocity_arm = desired_velocity_arm / np.linalg.norm(desired_velocity_arm) * self.arm_max_vel
+            # Derivative_error=Kd*(error_xyz - e_prev)/(i+1 - time_prev)
+            desired_velocity_xyz = self.Kp*error_xyz 
+            actions_to_send = desired_velocity_xyz
 
-            # desired_velocity_arm = np.hstack((desired_velocity_arm, np.zeros(3))) 
+            
+
+            # e_prev = error_xyz
+            # time_prev = i
         
+
             # Orientation error 
             current_orientation_matrix = self.euler_to_matrix(current_orientation) 
             target_orientation_matrix = self.euler_to_matrix(target_orientation) 
           
-            orientation_error = self.calc_rot_error(target_orientation_matrix, current_orientation_matrix)
-            desired_velocity_orientation = Kp * orientation_error
+            orientation_error=self.calc_rot_error(target_orientation_matrix, current_orientation_matrix)
+            desired_velocity_orientation = self.Kp * orientation_error
+            
+            if np.linalg.norm(desired_velocity_xyz) > self.arm_max_vel:
+                desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * self.arm_max_vel
 
-            desired_velocity = np.hstack((desired_velocity_arm, desired_velocity_orientation)) 
+            desired_velocity = np.hstack((desired_velocity_xyz, desired_velocity_orientation)) 
            
-            # transform endpoint vel to joint vel
-            J = self.compute_jacobian(joints_list, arm_current_pos, current_arm_joint_pos)
-
+            J= self.compute_jacobian(joints_list, arm_current_pos, current_arm_joint_pos)
             joint_velocities = self.pseudo_jacobian(J, desired_velocity)
 
-            actions_to_send = joint_velocities
-        elif (arm_waypoint < arm_trajectory.shape[0]-1 ):
-            # If the target waypoint is reached update the target waypoint to the next index
-            self.arm_waypoint += 1 
+            actions_to_send=joint_velocities
+            arm_waypoint += 1
+            
         else:
-            # If all waypoints have been reached stop the base and update the target reached variable
             actions_to_send = np.zeros(self.n_actions)
             arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue
+
+                
+        # if (np.linalg.norm(target_arm_pos - current_arm_joint_pos) > 0.01): 
+        #     # Controller to calculate velocities 
+        #     # TODO: PID, cubic, quinti
+        #     error_arm_pos = target_arm_pos - current_arm_joint_pos
+        #     desired_velocity_arm = 1.0 * error_arm_pos  
+
+        #     # Limit the actions to the max velocity of the robot
+        #     if np.linalg.norm(desired_velocity_arm) > self.arm_max_vel:
+        #         desired_velocity_arm = desired_velocity_arm / np.linalg.norm(desired_velocity_arm) * self.arm_max_vel
+
+        #     # desired_velocity_arm = np.hstack((desired_velocity_arm, np.zeros(3))) 
+        
+        #     # Orientation error 
+        #     current_orientation_matrix = self.euler_to_matrix(current_orientation) 
+        #     target_orientation_matrix = self.euler_to_matrix(target_orientation) 
+          
+        #     orientation_error = self.calc_rot_error(target_orientation_matrix, current_orientation_matrix)
+        #     desired_velocity_orientation = Kp * orientation_error
+
+        #     desired_velocity = np.hstack((desired_velocity_arm, desired_velocity_orientation)) 
+           
+        #     # transform endpoint vel to joint vel
+        #     J = self.compute_jacobian(joints_list, arm_current_pos, current_arm_joint_pos)
+
+        #     joint_velocities = self.pseudo_jacobian(J, desired_velocity)
+
+        #     actions_to_send = joint_velocities
+        # elif (arm_waypoint < arm_trajectory.shape[0]-1 ):
+        #     # If the target waypoint is reached update the target waypoint to the next index
+        #     self.arm_waypoint += 1 
+        # # else:
+        # #     # If all waypoints have been reached stop the base and update the target reached variable
+        # #     actions_to_send = np.zeros(self.n_actions)
+        # #     arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue
             
         # These are the instructions to move the arm
         for i in range(len(joints_list)-2):      
