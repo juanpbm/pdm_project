@@ -65,9 +65,9 @@ class ControlNode(Node):
             self.controller.time_prev_base=0
             self.base_target_reached = False
             temp_trajectory_base=np.vstack((self.base_current_pos,self.base_trajectory))
-            self.base_trajectory_quadratic=self.controller.cubic_spline_interpolation(temp_trajectory_base,self.controller.base_max_vel, 0.01)
+            self.base_trajectory_cubic=self.controller.cubic_spline_interpolation(temp_trajectory_base,self.controller.base_max_vel, 0.01)
         
-        print(self.base_trajectory_quadratic)
+        print(self.base_trajectory_cubic)
 
     def base_pos_callback(self, msg):
         self.get_logger().info('Got in Control Node base pos sub: "%s"' % msg)
@@ -96,7 +96,7 @@ class ControlNode(Node):
             current_arm_joint_pos, _ = self.controller.compute_forward_kinematics(self.controller.joints_list, self.arm_current_pos)
             temp_trajectory_arm=np.vstack((current_arm_joint_pos,self.arm_trajectory))
             self.arm_trajectory_cubic=self.controller.cubic_spline_interpolation(temp_trajectory_arm,self.controller.arm_max_vel, 0.01)
-        print(self.arm_trajectory_cubic)
+        # print(self.arm_trajectory_cubic)
 
     def arm_pos_callback(self, msg):
         self.get_logger().info('Got in Control Node arm pos sub: "%s"' % msg.data)
@@ -106,7 +106,7 @@ class ControlNode(Node):
         print(self.arm_current_pos)
 
     def move_base(self):
-        action, self.base_target_reached, self.base_waypoint = self.controller.run_panda_base(self.base_current_pos, self.base_trajectory_quadratic, self.base_waypoint, self.base_target_reached)
+        action, self.base_target_reached, self.base_waypoint = self.controller.run_panda_base(self.base_current_pos, self.base_trajectory_cubic, self.base_waypoint, self.base_target_reached)
 
         # Construct the cmd_vel msg for the base
         msg = Float64MultiArray()
