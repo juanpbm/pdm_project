@@ -51,8 +51,8 @@ class Panda_Sym:
         sensor = OccupancySensor(
             limits =  np.array([[0, 20], [0, -16], [0, 50/val]]),
             resolution = np.array([80, 64, 5], dtype=int),
-            interval=100,
-            plotting_interval=100,
+            interval=1000000,
+            plotting_interval=1000000,
         )
 
         self.env.add_sensor(sensor, [0])
@@ -415,6 +415,7 @@ class Panda_Sym:
     
     def Get_Ob(self):
         # Get Current position
+        self.ob = self.env._get_ob()
         return self.ob
 
     def move_panda(self, action):

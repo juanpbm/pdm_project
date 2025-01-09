@@ -85,8 +85,8 @@ def main(args=None):
     try:
         rclpy.init(args=args)
         panda_env_node = PandaEnvNode()
-        panda_env_node.pub_map()
         while(rclpy.ok()):
+            panda_env_node.pub_map()
             panda_env_node.pub_base_pos()
             panda_env_node.pub_arm_pos()
             rclpy.spin_once(panda_env_node, timeout_sec=5)
