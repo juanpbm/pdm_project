@@ -47,9 +47,9 @@ class PandaEnvNode(Node):
         
         # Create Point msg
         msg = Point()
-        msg.x = current_xyz[0]+4.0
-        msg.y = current_xyz[1]-14.0
-        msg.z = current_xyz[2]
+        msg.x = current_xyz[0] + self.panda_env.init_pos[0]
+        msg.y = current_xyz[1] + self.panda_env.init_pos[1]
+        msg.z = current_xyz[2] + self.panda_env.init_pos[2]
 
         # Publish current position
         self.base_pos_publisher_.publish(msg)
