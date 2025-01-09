@@ -1,10 +1,14 @@
 import warnings
 import gymnasium as gym
 import numpy as np
+
 from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
 from mpscenes.obstacles.box_obstacle import BoxObstacle
 from mpscenes.obstacles.sphere_obstacle import SphereObstacle
+
+from urdfenvs.sensors.occupancy_sensor import OccupancySensor
+
 
 class Panda_Sym:
     def __init__(self, render=True,
@@ -22,12 +26,56 @@ class Panda_Sym:
         self.height = 2
         self.init_pos = np.array([4.0,-14.0,0.0])
         self.albert_pos = [-(self.boundary_size/2 - self.room_size/2), -(self.boundary_size/2 - self.room_size/2), 0.0]
+        self.init_pos = np.array([4.0,-14.0,0.0])
         self.env: UrdfEnv = None
         self.Gen_Env()
-          
+
+        self.run_point_robot_with_occupancy_sensor()
+    
     def __del__(self):
         if self.env is not None:
             self.env.close()
+
+    def get_index_from_coordinates(self,point, mesh) -> tuple:
+        distances = np.linalg.norm(mesh - point, axis=3)
+        return np.unravel_index(np.argmin(distances), mesh.shape[:-1])
+
+    def evaluate_occupancy(self, point, mesh, occupancy, resolution) -> int:
+        index = list(self.get_index_from_coordinates(point, mesh))
+        return occupancy[tuple(index)]
+
+    def run_point_robot_with_occupancy_sensor(self, n_steps=10):
+        
+        # add sensor
+        val = 80
+        sensor = OccupancySensor(
+            limits =  np.array([[0, 20], [0, -16], [0, 50/val]]),
+            resolution = np.array([80, 64, 5], dtype=int),
+            interval=100,
+            plotting_interval=100,
+        )
+
+        self.env.add_sensor(sensor, [0])
+        # Set spaces AFTER all components have been added.
+        self.env.set_spaces()
+        defaultAction = np.array([1.0,-1.0,0.0])
+        
+        initial_observations = []
+        initial_observations.append(self.ob)
+        self.env.add_debug_shape(
+            (0.2, -0.3, 0.0),
+            (0.0, 0.0, 0.0, 1.0),
+            size=[0.3],
+            rgba_color=[0.0, 0.0, 0.0, 0.3],
+        )
+        point=[]
+        action = np.zeros(self.env.n())
+        for _ in range(n_steps):
+            action[:3] = defaultAction
+            self.ob, *_ = self.env.step(action)
+            point = np.append(self.ob['robot_0']['joint_state']['position'][0:2], 0.0)
+            occupancy = self.ob['robot_0']['Occupancy']
+            occupancy_eval = self.evaluate_occupancy(point, sensor.mesh(), occupancy, [0.2, 0.2, 1])
 
     def Gen_Env(self):
         self.Gen_Panda()
@@ -52,10 +100,8 @@ class Panda_Sym:
         self.env.add_obstacle(self.shelf4)
         #self.env.add_obstacle(self.shelf5)
         self.env.add_obstacle(self.shelf6)
-
-        action = np.zeros(self.env.n())
-        self.ob = self.env.reset(mount_positions=np.array([self.init_pos]))
-        self.ob, *_ = self.env.step(action) 
+        vel0 = np.array([0.0, 0.0, 0.0])
+        self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=vel0)
 
     def Gen_Panda(self):
         self.panda_robot = [

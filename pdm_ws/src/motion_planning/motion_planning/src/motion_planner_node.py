@@ -9,6 +9,9 @@ from motion_planning.src.motion_planner import RRT
 from ament_index_python.packages import get_package_share_directory
 import os
 
+import matplotlib.pyplot as plt
+
+from std_msgs.msg import Float64MultiArray, MultiArrayDimension
 
 class MotionPlannerNode(Node):
     def __init__(self):
@@ -16,28 +19,49 @@ class MotionPlannerNode(Node):
         self.base_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'base_trajectory', 10)
         self.arm_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'arm_trajectory', 10)
         self.subscription = self.create_subscription(
-            String,
+            Float64MultiArray,
             'map',
             self.map_callback,
             10)
 
         # TODO: what other information or topics are needed?
+        self.map = None
+        self.base_trajectory = np.empty(0)
+        self.arm_trajectory = np.empty(0)
         print("motion_planner Node has been created.")
 
     def map_callback(self, msg):
-        self.get_logger().info('Got in Motion Planning Node sub: "%s"' % msg.data)
+        self.get_logger().info('Got Map in Motion Planning Node sub')
 
-        base_trajectory = self.temp_map_rrt()
+        if (self.map is None):
+            dims = msg.layout.dim
+            if len(dims) == 0:
+                self.get_logger().error('Received an array with no dimensions.')
+                return
+            shape = tuple(dim.size for dim in dims)
+            self.map = np.array(msg.data).reshape(shape)
+
+            slice_index = 1
+            slice_data = self.map[:,:,slice_index]
+
+            plt.imshow(slice_data, cmap="gray", origin="lower")
+            plt.title(f"Occupancy map")
+            plt.show()
+
+            self.base_trajectory = self.map_rrt()
+
         # Dummy trajectory. The computed trajectory should return something similar
-        arm_trajectory = np.array([[0.6, 0, 0.5]])
+        self.arm_trajectory = np.array([[0.6, 0, 0.5]])
+        self.pub_trajectories()
 
+    def pub_trajectories(self):
         # Create array message with the base trajectory information
         base_msg = Float64MultiArray()
-        base_msg.data = base_trajectory.flatten().tolist()
+        base_msg.data = self.base_trajectory.flatten().tolist()
         assert all(isinstance(val, float) for val in base_msg.data) # All elements must be floats
         # Define dimensions of the msg to reconstruct by the subscribers
-        base_msg.layout.dim.append(MultiArrayDimension(label='rows', size=base_trajectory.shape[0], stride=base_trajectory.shape[1] * base_trajectory.shape[0]))
-        base_msg.layout.dim.append(MultiArrayDimension(label='cols', size=base_trajectory.shape[1], stride=base_trajectory.shape[1]))
+        base_msg.layout.dim.append(MultiArrayDimension(label='rows', size=self.base_trajectory.shape[0], stride=self.base_trajectory.shape[1] * self.base_trajectory.shape[0]))
+        base_msg.layout.dim.append(MultiArrayDimension(label='cols', size=self.base_trajectory.shape[1], stride=self.base_trajectory.shape[1]))
 
         # Publish base Trajectory 
         self.base_trajectory_publisher_.publish(base_msg)
@@ -45,11 +69,11 @@ class MotionPlannerNode(Node):
 
         # Create array message with the arm trajectory information
         arm_msg = Float64MultiArray()
-        arm_msg.data = arm_trajectory.flatten().tolist()
+        arm_msg.data = self.arm_trajectory.flatten().tolist()
         assert all(isinstance(val, float) for val in arm_msg.data) # All elements must be floats
         # Define dimensions of the msg to reconstruct by the subscribers
-        arm_msg.layout.dim.append(MultiArrayDimension(label='rows', size=arm_trajectory.shape[0], stride=arm_trajectory.shape[1] * arm_trajectory.shape[0]))
-        arm_msg.layout.dim.append(MultiArrayDimension(label='cols', size=arm_trajectory.shape[1], stride=arm_trajectory.shape[1]))
+        arm_msg.layout.dim.append(MultiArrayDimension(label='rows', size=self.arm_trajectory.shape[0], stride=self.arm_trajectory.shape[1] * self.arm_trajectory.shape[0]))
+        arm_msg.layout.dim.append(MultiArrayDimension(label='cols', size=self.arm_trajectory.shape[1], stride=self.arm_trajectory.shape[1]))
 
         # Publish arm trajectory
         self.arm_trajectory_publisher_.publish(arm_msg)
@@ -58,9 +82,8 @@ class MotionPlannerNode(Node):
 
     #Functions that use the motion planning class to compute the RRT
 
-    def temp_map_rrt(self):
-        file_path_occupancy = os.path.join(os.path.dirname(get_package_share_directory('sim_env')), 'sim_env', 'resource', 'occupancy_grid.npy')
-        image_array = np.load(file_path_occupancy)
+    def map_rrt(self):
+        image_array = self.map
         rrt = RRT()
 
         # Ensure the data type is uint8
