@@ -1,0 +1,3 @@
+[submodule "pdm_ws/src/sim_env/sim_env/include/gym_envs_urdf"]
+	path = pdm_ws/src/sim_env/sim_env/include/gym_envs_urdf
+	url = https://github.com/maxspahn/gym_envs_urdf.git
