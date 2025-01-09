@@ -5,11 +5,6 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
 from control.src.control import Controller
-from control.src.control import custom_URDF
-
-import pickle
-import os
-from ament_index_python.packages import get_package_share_directory
 
 class ControlNode(Node):
     def __init__(self):
@@ -47,27 +42,7 @@ class ControlNode(Node):
         self.arm_waypoint = 0
         self.controller = Controller()
 
-        # path to pikle files containing arm information
-        file_path_axis = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_axis.pickle')
-        file_path_origin = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_origin.pickle')
-
-        # Load Arm information
-        joints_class = custom_URDF()
-        joints_class.create_list()
-        with open(file_path_origin, 'rb') as file:
-            # Load the joint origin data
-            joints_origin_list_loaded = pickle.load(file)
-
-        with open(file_path_axis, 'rb') as file:
-            # Load the joints axis data
-            joints_axis_list_loaded = pickle.load(file)
-
-        # Combine joints data
-        for x in range(len(joints_origin_list_loaded)):
-            joint_temp = custom_URDF(joints_origin_list_loaded[x],joints_axis_list_loaded[x])
-            joints_class.add_joint(joint_temp)
-
-        self.joints_list = joints_class.get_joints()
+        
     
         # TODO: what other information or topics are needed?
         print("control Node has been created.")
@@ -86,6 +61,8 @@ class ControlNode(Node):
             self.base_trajectory = new_trajectory
             # Reset progress variables
             self.base_waypoint = 0
+            self.controller.e_prev_base=[0,0,0]
+            self.controller.time_prev_base=0
             self.base_target_reached = False
             temp_trajectory_base=np.vstack((self.base_current_pos,self.base_trajectory))
             self.base_trajectory_quadratic=self.controller.cubic_spline_interpolation(temp_trajectory_base,self.controller.base_max_vel, 0.01)
@@ -112,9 +89,11 @@ class ControlNode(Node):
             self.arm_trajectory = new_trajectory
             # Reset progress variables
             self.arm_waypoint = 0
+            self.controller.e_prev_arm=[0,0,0]
+            self.controller.time_prev_arm=0
             self.arm_target_reached = False
             # Get current position and trajectory
-            current_arm_joint_pos, _ = self.controller.compute_forward_kinematics(self.joints_list, self.arm_current_pos)
+            current_arm_joint_pos, _ = self.controller.compute_forward_kinematics(self.controller.joints_list, self.arm_current_pos)
             temp_trajectory_arm=np.vstack((current_arm_joint_pos,self.arm_trajectory))
             self.arm_trajectory_cubic=self.controller.cubic_spline_interpolation(temp_trajectory_arm,self.controller.arm_max_vel, 0.01)
         print(self.arm_trajectory_cubic)
@@ -138,7 +117,7 @@ class ControlNode(Node):
         self.get_logger().info('Publishing base action from control Node: "%s"' % msg.data)
 
     def move_arm(self):
-        action, self.arm_target_reached, self.arm_waypoint = self.controller.run_panda_arm(self.arm_current_pos, self.arm_trajectory_cubic, self.arm_waypoint, self.arm_target_reached, self.joints_list)
+        action, self.arm_target_reached, self.arm_waypoint = self.controller.run_panda_arm(self.arm_current_pos, self.arm_trajectory_cubic, self.arm_waypoint, self.arm_target_reached)
         
         # Construct the cmd_vel msg for the joints
         msg = Float64MultiArray()

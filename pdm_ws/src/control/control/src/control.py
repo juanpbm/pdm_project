@@ -27,8 +27,33 @@ class Controller:
         self.arm_max_vel = 0.5
         self.Kp=5
         self.Kd=2
-        self.e_prev=[0,0,0]
-        self.time_prev=0
+        self.e_prev_arm=[0,0,0]
+        self.time_prev_arm=0
+        self.e_prev_base=[0,0,0]
+        self.time_prev_base=0
+
+        # path to pikle files containing arm information
+        file_path_axis = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_axis.pickle')
+        file_path_origin = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_origin.pickle')
+
+        # Load Arm information
+        joints_class = custom_URDF()
+        joints_class.create_list()
+
+        with open(file_path_origin, 'rb') as file:
+            # Load the joint origin data
+            joints_origin_list_loaded = pickle.load(file)
+
+        with open(file_path_axis, 'rb') as file:
+            # Load the joints axis data
+            joints_axis_list_loaded = pickle.load(file)
+
+        # Combine joints data
+        for x in range(len(joints_origin_list_loaded)):
+            joint_temp = custom_URDF(joints_origin_list_loaded[x],joints_axis_list_loaded[x])
+            joints_class.add_joint(joint_temp)
+
+        self.joints_list = joints_class.get_joints()
 
     def cubic_spline_interpolation(self,via_points,V_max, desired_dt):
         
@@ -127,99 +152,29 @@ class Controller:
         action = np.zeros(self.n_actions, dtype=float)
         
         # Set current position and target
+        action_to_send = [0.0,0.0, 0.0]
+
         
-        # action_to_send = [0.0,0.0,0.0]
-        action_to_send = [0.0,0.0]
-
-
-        # V_max = 10 # Maximum velocity (units per time unit)
-        # dt=0.01
-        # trajectory_xyz=np.vstack((current_xyz,target_xyz))
-        # coordinates_trajectory=self.trajectory_planning(trajectory_xyz,V_max, dt)
-       
-  
-        # if (len(coordinates_trajectory)>i): 
-           
-        #     error_xyz = coordinates_trajectory[i] - current_xyz[:2]
-        #     Derivative_error=Kd*(error_xyz - e_prev)/(i+1 - time_prev)
-        #     desired_velocity_xyz = Kp*error_xyz + Derivative_error
-        #     action_to_send = desired_velocity_xyz
-
-        #     e_prev = error_xyz
-        #     time_prev = i
+        if(len(base_trajectory)+100>base_waypoint): 
+            if (len(base_trajectory)>base_waypoint): 
             
-        # elif(len(coordinates_trajectory)+100>i):   
-        #     error_xyz = coordinates_trajectory[-1] - current_xyz[:2]
-        #     Derivative_error=Kd*(error_xyz - e_prev)/(i+1 - time_prev)
-        #     desired_velocity_xyz = Kp*error_xyz + Derivative_error
-        #     action_to_send = desired_velocity_xyz
-
-        #     e_prev = error_xyz
-        #     time_prev = i
-        
-        # if (np.linalg.norm(target_xyz - current_xyz) > 0.1): 
-        #     # Controller to calculate velocities 
-        #     # TODO: PID, cubic, quintic
-        #     error_xyz = target_xyz - current_xyz
-        #     desired_velocity_xyz = 1 * error_xyz
-
-        # V_max = 10 # Maximum velocity (units per time unit)
-        # dt=0.01
-        # trajectory_xyz=np.vstack((current_xyz,target_xyz))
-        # coordinates_trajectory=self.trajectory_planning(trajectory_xyz,V_max, dt)
-        
-  
-        if (len(base_trajectory)>base_waypoint): 
-           
-            error_xyz = base_trajectory[base_waypoint] - current_xyz[:3]
-            Derivative_error=self.Kd*(error_xyz - self.e_prev)/(base_waypoint+1 - self.time_prev)
-            desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
-
-            action_to_send = desired_velocity_xyz
-
-            self.e_prev = error_xyz
-            self.time_prev = base_waypoint
-            base_waypoint += 1
+                error_xyz = base_trajectory[base_waypoint] - current_xyz[:3]
             
-        elif(len(base_trajectory)+100>base_waypoint):   
-            error_xyz = base_trajectory[-1] - current_xyz[:3]
-            Derivative_error=self.Kd*(error_xyz - self.e_prev)/(base_waypoint+1 - self.time_prev)
+            else:   
+                error_xyz = base_trajectory[-1] - current_xyz[:3]
+
+            Derivative_error=self.Kd*(error_xyz - self.e_prev_base)/(base_waypoint+1 - self.time_prev_base)
             desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
             action_to_send = desired_velocity_xyz
 
-            self.e_prev = error_xyz
-            self.time_prev = base_waypoint
+            self.e_prev_base = error_xyz
+            self.time_prev_base = base_waypoint
             base_waypoint += 1
         else:
             # If all waypoints have been reached stop the base and update the target reached variable
             action_to_send = [0,0,0]
             base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
 
-        # if (np.linalg.norm(target_xyz - current_xyz) > 0.1): 
-        #     # Controller to calculate velocities 
-        #     # TODO: PID, cubic, quintic
-        #     error_xyz = target_xyz - current_xyz
-        #     desired_velocity_xyz = 1 * error_xyz
-        #     action_to_send = desired_velocity_xyz
-
-        #     # Limit the actions to the max velocity of the robot
-        #     # TODO: Check and match with arm
-        #     for vel in action_to_send:
-        #         if vel > self.base_max_vel:
-        #             vel = self.base_max_vel
-        # elif (base_waypoint < base_trajectory.shape[0] - 1):
-        #     # If the target waypoint is reached update the target waypoint to the next index
-        #     base_waypoint += 1
-        # else:
-        #     # If all waypoints have been reached stop the base and update the target reached variable
-        #     action_to_send = [0,0,0]
-        #     base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
-
-        # for vel in action_to_send:
-        #         if vel > self.base_max_vel:
-        #             vel = self.base_max_vel
-        # Action is the variable with the target velocities for the robot
-        # action[:3] = action_to_send
         for i in range(len(action_to_send)):
                 if action_to_send[i] > self.base_max_vel:
                     action_to_send[i] = self.base_max_vel
@@ -317,33 +272,11 @@ class Controller:
 
         return pseudo_inverse @ desired_velocity
 
-    def run_panda_arm(self, arm_current_pos, arm_trajectory, arm_waypoint, arm_target_reached, joints_list):
+    def run_panda_arm(self, arm_current_pos, arm_trajectory, arm_waypoint, arm_target_reached):
         action = np.zeros(self.n_actions)
-        
-        # # path to pikle files containing arm information
-        # file_path_axis = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_axis.pickle')
-        # file_path_origin = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_origin.pickle')
-
-        # # Load Arm information
-        # joints_class = custom_URDF()
-        # joints_class.create_list()
-        # with open(file_path_origin, 'rb') as file:
-        #     # Load the joint origin data
-        #     joints_origin_list_loaded = pickle.load(file)
-
-        # with open(file_path_axis, 'rb') as file:
-        #     # Load the joints axis data
-        #     joints_axis_list_loaded = pickle.load(file)
-
-        # # Combine joints data
-        # for x in range(len(joints_origin_list_loaded)):
-        #     joint_temp = custom_URDF(joints_origin_list_loaded[x],joints_axis_list_loaded[x])
-        #     joints_class.add_joint(joint_temp)
-
-        # joints_list = joints_class.get_joints()
     
         # Get current position and trajectory
-        current_arm_joint_pos, current_orientation = self.compute_forward_kinematics(joints_list, arm_current_pos)
+        current_arm_joint_pos, current_orientation = self.compute_forward_kinematics(self.joints_list, arm_current_pos)
         
         target_orientation = np.array([1, 0, 0]) # Euler Angles TODO: where would this come from. 
         actions_to_send = np.zeros(self.n_actions)
@@ -356,14 +289,14 @@ class Controller:
                 error_xyz = arm_trajectory[-1] - current_arm_joint_pos[:3]
                
 
-            # Derivative_error=Kd*(error_xyz - e_prev)/(i+1 - time_prev)
-            desired_velocity_xyz = self.Kp*error_xyz 
+            Derivative_error=self.Kd*(error_xyz - self.e_prev_arm)/(arm_waypoint+1 - self.time_prev_arm)
+            desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
             actions_to_send = desired_velocity_xyz
 
             
 
-            # e_prev = error_xyz
-            # time_prev = i
+            self.e_prev_arm = error_xyz
+            self.time_prev_arm = arm_waypoint
         
 
             # Orientation error 
@@ -378,7 +311,7 @@ class Controller:
 
             desired_velocity = np.hstack((desired_velocity_xyz, desired_velocity_orientation)) 
            
-            J= self.compute_jacobian(joints_list, arm_current_pos, current_arm_joint_pos)
+            J= self.compute_jacobian(self.joints_list, arm_current_pos, current_arm_joint_pos)
             joint_velocities = self.pseudo_jacobian(J, desired_velocity)
 
             actions_to_send=joint_velocities
@@ -388,44 +321,9 @@ class Controller:
             actions_to_send = np.zeros(self.n_actions)
             arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue
 
-                
-        # if (np.linalg.norm(target_arm_pos - current_arm_joint_pos) > 0.01): 
-        #     # Controller to calculate velocities 
-        #     # TODO: PID, cubic, quinti
-        #     error_arm_pos = target_arm_pos - current_arm_joint_pos
-        #     desired_velocity_arm = 1.0 * error_arm_pos  
-
-        #     # Limit the actions to the max velocity of the robot
-        #     if np.linalg.norm(desired_velocity_arm) > self.arm_max_vel:
-        #         desired_velocity_arm = desired_velocity_arm / np.linalg.norm(desired_velocity_arm) * self.arm_max_vel
-
-        #     # desired_velocity_arm = np.hstack((desired_velocity_arm, np.zeros(3))) 
-        
-        #     # Orientation error 
-        #     current_orientation_matrix = self.euler_to_matrix(current_orientation) 
-        #     target_orientation_matrix = self.euler_to_matrix(target_orientation) 
-          
-        #     orientation_error = self.calc_rot_error(target_orientation_matrix, current_orientation_matrix)
-        #     desired_velocity_orientation = Kp * orientation_error
-
-        #     desired_velocity = np.hstack((desired_velocity_arm, desired_velocity_orientation)) 
-           
-        #     # transform endpoint vel to joint vel
-        #     J = self.compute_jacobian(joints_list, arm_current_pos, current_arm_joint_pos)
-
-        #     joint_velocities = self.pseudo_jacobian(J, desired_velocity)
-
-        #     actions_to_send = joint_velocities
-        # elif (arm_waypoint < arm_trajectory.shape[0]-1 ):
-        #     # If the target waypoint is reached update the target waypoint to the next index
-        #     self.arm_waypoint += 1 
-        # # else:
-        # #     # If all waypoints have been reached stop the base and update the target reached variable
-        # #     actions_to_send = np.zeros(self.n_actions)
-        # #     arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue
             
         # These are the instructions to move the arm
-        for i in range(len(joints_list)-2):      
+        for i in range(len(self.joints_list)-2):      
                 action[i + 3] = actions_to_send[i]
 
         return action, arm_target_reached, arm_waypoint
