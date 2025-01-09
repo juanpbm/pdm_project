@@ -2,11 +2,9 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 import numpy as np
-from urdfenvs.robots.generic_urdf import GenericUrdfReacher
-from urdfenvs.urdf_common.urdf_env import UrdfEnv
+import matplotlib.pyplot as plt
 
 from std_msgs.msg import Float64MultiArray, MultiArrayDimension
-from std_msgs.msg import String
 
 class MotionPlannerNode(Node):
     def __init__(self):
@@ -14,7 +12,7 @@ class MotionPlannerNode(Node):
         self.base_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'base_trajectory', 10)
         self.arm_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'arm_trajectory', 10)
         self.subscription = self.create_subscription(
-            String,
+            Float64MultiArray,
             'map',
             self.map_callback,
             10)
@@ -23,14 +21,30 @@ class MotionPlannerNode(Node):
         print("motion_planner Node has been created.")
 
     def map_callback(self, msg):
-        self.get_logger().info('Got in Motion Planning Node sub: "%s"' % msg.data)
+        self.get_logger().info('Got Map in Motion Planning Node sub')
+
+        dims = msg.layout.dim
+        if len(dims) == 0:
+            self.get_logger().error('Received an array with no dimensions.')
+            return
+        shape = tuple(dim.size for dim in dims)
+        map = np.array(msg.data).reshape(shape)
+
+        slice_index = 1
+        slice_data = map[:,:,slice_index]
+
+        plt.imshow(slice_data, cmap="gray", origin="lower")
+        plt.title(f"Occupancy map")
+        plt.show()
 
         # TODO: compute trajectory
 
         # Dummy trajectory. The computed trajectory should return something similar
         base_trajectory = np.array([[1, 1, 0], [2, 2, 0], [1, 2, 0], [0, 0, 0]], dtype=float) 
         arm_trajectory = np.array([[0.6, 0, 0.5]])
+        self.pub_trajectories(base_trajectory, arm_trajectory)
 
+    def pub_trajectories(self, base_trajectory, arm_trajectory):
         # Create array message with the base trajectory information
         base_msg = Float64MultiArray()
         base_msg.data = base_trajectory.flatten().tolist()
@@ -54,9 +68,6 @@ class MotionPlannerNode(Node):
         # Publish arm trajectory
         self.arm_trajectory_publisher_.publish(arm_msg)
         self.get_logger().info('Published arm_target_xyz:"%s"' % arm_msg.data)
-
-
-    #Functions that use the motion planning class to compute the RRT
 
 def main(args=None):
     # start the motion planning node
