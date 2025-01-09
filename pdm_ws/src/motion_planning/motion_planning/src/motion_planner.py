@@ -3,11 +3,15 @@ from rclpy.node import Node
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
+import sys
 
+sys.setrecursionlimit(10_000)
 
-message = []
+# Global variables
+message = []                                                                                                # Message for ros topic
 
 class Conex:
+    # Constructor of the class
     def __init__(self,p,c,cst, id):
         self.id = id
 
@@ -20,14 +24,16 @@ class Conex:
 
 class RRT:
     def __init__(self):
-        self.N = 10000
-        self.gamma = 0.9
-        self.d = 3
+        self.N = 10000                                                                                      # Maximum number of iterations
+        self.gamma = 400                                                                                  # Gamma value for the algorithm
+        self.d = 2                                                                                          # d value for the algorithm
 
+    # Returns the euclidean distance between 2 points
     def EuclideanDistance(self, p_1,p_2):
 
         return (((p_1[0]-p_2[0])**2)+((p_1[1]-p_2[1])**2))**(1/2)
 
+    # Returns true if the given point is not inside an obstacle nor is around one
     def No_obstacle(self, img,p_w,p_h):
         if(img[p_w,p_h] == 255 and img[p_w,p_h+1] == 255 and img[p_w+1,p_h] == 255 and img[p_w+1,p_h+1] == 255
         and img[p_w,p_h-1] == 255 and img[p_w-1,p_h] == 255 and img[p_w-1,p_h-1] == 255 and img[p_w-1,p_h+1]==255 and img[p_w+1,p_h-1]==255 and img[p_w,p_h+2] == 255 
@@ -37,113 +43,155 @@ class RRT:
         else:
             return False
 
+    # Returns the closest neightbour in the already generated graph to the newly randomly created point
     def GetClosestNeightbour(self, p_w,p_h,V_E,r):
+        # Initialize distance, closest neightbour and a list to add all the neightbours within a radius 'r'
         dist = 100000000
         closest = Conex((None,None),(None,None), None,-1)
         neight = []
 
+        # Go through all the nodes of the graph
         for i in V_E:
-            d = self.EuclideanDistance(i.child,(p_w,p_h))
-            #print(d)
+            d = self.EuclideanDistance(i.child,(p_w,p_h))                                                       # Get the distance between each node and the new point
+            
+            # If the distance is less or equal than the radius
             if(d<=r):
-                neight.append(i)
+                neight.append(i)                                                                                # Append the node
+                
+                # If it is the smallest distance among all of the ones computed until now
                 if(d<dist):
+                    # Update the closest neightbour 
                     if(i.cost != None):
                         dist = d + i.cost
                     else:
                         dist = d
-                    closest = i           
+                    closest = i            
 
         return closest,neight,dist
 
-
-    def ClearLine(self, new_w,new_h,closest,img):
-        x1, y1 = closest.child
-
+    # Returns true if the position between the 2 points is clear (no obstacles)
+    def ClearLine(self,new_w,new_h,p,img):
+        # Get the coordinates of the point
+        x1, y1 = p.child
+        
+        # Get points between the coordinates of both points
         points = zip(
-            np.linspace(x1, new_w, num=150, dtype=int),
-            np.linspace(y1, new_h, num=150, dtype=int)
-        )
+            np.linspace(x1, new_w, num=10000, dtype=int),
+            np.linspace(y1, new_h, num=10000, dtype=int))
+        
+        # If it is not crossing an obstacle, return True
         for x, y in points:
             if img[x, y] < 255:
                 return False
         return True
+    
+    # Update the costs of the different nodes when updating the position of one of the nodes of the graph
+    def update_costs(self,node, V_E, img,i=0):
+        stack = [node]                                                                                              # Initialize a stack and a visited set
+        visited = set()                                                                                             # Set to track visited nodes
 
+        while stack:
+            current_node = stack.pop()                                                                              # Pop the current node from the stack
 
-    def update_costs(self, node, V_E, img):
-        for edge in V_E:
-            if edge.parent == node.child:
-                edge.cost = node.cost + self.EuclideanDistance(node.child, edge.child)
-                self.update_costs(edge, V_E, img)
+            # Skip the visitated nodes
+            if current_node.child in visited:                                                                       
+                continue
 
-    def smooth_path(self, path, img):
+            visited.add(current_node.child)                                                                         # Mark the current node as visited
 
-        smoothed_path = [path[0]]  # Start with the first node // End
+            # Update the costs of the edges where the current node is the parent
+            for edge in V_E:
+                if edge.parent == current_node.child:
+                    V_E[edge.id].cost = current_node.cost + self.EuclideanDistance(current_node.child, edge.child)               # Update the edge cost
+                    
+                    if edge.child not in visited:                                                                   # Only add unvisited nodes
+                        stack.append(edge)                                                                          # Add this edge to the stack
+
+    # Get a smoother trajectory within the shortest path
+    def smooth_path(self,path, img):
+        smoothed_path = [path[0]]                                                                                   # Initialize the smoothed path with the last node
         i = 0
 
         while i < len(path) - 1:
-            j = len(path) - 1  # Start from the end of the path // Start
-            while j-1 > i:
-                if self.ClearLine(path[j].child[0], path[j].child[1], path[i], img):  # Check line of sight
-                    smoothed_path.append(path[j])  # Add the farthest visible node
-                    i = j  # Skip to this node
+            j = len(path) - 1                                                                                       # Start from the beggining of the path
+            while j > i:
+                # If there is a clear line in between
+                if self.ClearLine(path[j].child[0], path[j].child[1], path[i], img):
+                    smoothed_path.append(path[j])                                                                   # Add the farthest visible node
+                    i = j
                     break
                 j = j - 1
             else:
+                smoothed_path.append(path[i + 1])
                 i = i + 1
+
+        #if path[-1] not in smoothed_path:
+        #    smoothed_path.append(path[-1])
 
         return smoothed_path
 
-
+    # RRT* algorithm
     def RRT_star(self, img,start,end,rad_f,size,image):
+        # Create the start node and append it to the list of the graph
         s = Conex((None,None),start, None,0)
-
         V_E = []
         V_E.append(s)
-        gamma = 400
-        d = 2
 
+        # Go through iterations to get the trajectory in order to arrive at the goal position
         for n in range(self.N):
-            #rad = gamma*(np.log(n+1)/n+1)**(1/d)
-            rad = gamma * (np.log(n+1) / (n+1)) ** (1 / d)
+            # Change the radius of updatind depending on the iteration number
+            rad = self.gamma * (np.log(n+1) / (n+1)) ** (1 / self.d)
 
+            # Auxiliar values to make the algorithm work
             new_node = None
             cost = 9999999
             ok = False
+            # Iterate until it finds a node that can be introduced to the graph:
+            #   - It has to be outside an obstacle
+            #   - The line between the closes neightbour and the point must be clear (do not go through an obstacle)
             while(ok == False):
                 new_w = np.random.randint(2,size[0]-2)
                 new_h = np.random.randint(2,size[1]-2)
-
+                # With a 10% of probability, the new node will be the last node - THIS IS NOT PART OF THE RRT* BUT AN IMPROVEMENT FOR OUR PROBLEM
                 if np.random.uniform(0, 1) < 0.1:
                     new_w = end[0]
                     new_h = end[1]
                 else:
+                    # Randomize the position of the new point with a certain margin
                     new_w = np.random.randint(2,size[0]-2)
                     new_h = np.random.randint(2,size[1]-2)
 
+                # If the new point is not inside an obstacle
                 if(self.No_obstacle(img,new_w,new_h)):
+                    print(n)
                     ok = True
 
-                    [closest, neight, cost] = self.GetClosestNeightbour(new_w,new_h,V_E,rad)
+                    [closest, neight, cost] = self.GetClosestNeightbour(new_w,new_h,V_E,rad)                            # Get the closest neightbour to the point
 
+                    # If it is a valid neightbour
                     if(closest.id != -1):
-
+                        # If there is a clear line between the point and the closest neightbour
                         if(self.ClearLine(new_w,new_h,closest,img) == True):
-                            #print("Cost: "+str(cost))
+                            # Create and add the node to the list
                             new_node = Conex(closest.child,(new_w,new_h), cost,n+1)
                             V_E.append(new_node)
-                            #print("Color: "+str(img[new_w,new_h]))
-                            image = cv.circle(image, (new_node.child[1], new_node.child[0]), 2, (0,255,0), -1)
 
+                            image = cv.circle(image, (new_node.child[1], new_node.child[0]), 2, (0,255,0), -1)          # Draw the point on the image
+
+                            # Go through all the neightbours of the new node to update their costs if necessary
                             for n in neight:
-                                #print(cost + EuclideanDistance(new_node.child,n.child))
-
-                                #print("Another: "+str(n.cost)+ "    " + str(n.id))
+                                # The cost will be updated if:
+                                #   - The cost of the neightbour is not None (not start point)
+                                #   - The new cost is smaller that the older cost of the neightbour
+                                #   - The new neightbour is  not the closest one
+                                #   - There is a clear line between the neightbour and the new node
                                 if((n.cost != None and cost + self.EuclideanDistance(new_node.child,n.child) < n.cost) and n.id!=closest.id 
                                 and self.ClearLine(n.child[0],n.child[1],new_node,img) == True):
-                                    n.parent = new_node.child
-                                    n.cost = cost + self.EuclideanDistance(new_node.child, n.child)
-                                    # IMPORTANTE
+                                    # Update the cost of the 
+                                    V_E[n.id].parent = new_node.child
+                                    V_E[n.id].cost = cost + self.EuclideanDistance(new_node.child, n.child)
+
+                                    # Update the costs of the child nodes of the update node
                                     self.update_costs(n, V_E, img)
 
                         else:
@@ -153,25 +201,24 @@ class RRT:
                 else:
                     ok = False
 
+            # If the new node is not None and the new node is inside the indicated radius
             if(new_node!=None):
                 if(self.EuclideanDistance(end, new_node.child)<=rad_f):
-                    #print(new_node.child)
-                    #print(end)
-                    print("Done")
-                    break
+                    break                                                                                           # Finish the algorithm
 
         return V_E,image
 
+    # Find the shortest path between the last node and the start one
     def find_shortest(self, shortest, V_E,last):
+        # If we get to the start point
         if(last.parent == (None,None)):
             shortest.append(last)
             return shortest
 
+        # Go through all points on the list of the graph
         for point in V_E:
             if(point.child == last.parent):
                 shortest.append(last)
                 return self.find_shortest(shortest, V_E,point)
 
         print("fuera")
-
-        #return shortest.append(find_shortest(shortest, V_E,last))

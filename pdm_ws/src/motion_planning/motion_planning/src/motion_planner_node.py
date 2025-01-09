@@ -59,17 +59,36 @@ class MotionPlannerNode(Node):
     #Functions that use the motion planning class to compute the RRT
 
     def temp_map_rrt(self):
-        file_path_img = os.path.join(os.path.dirname(get_package_share_directory('motion_planning')), 'motion_planning', 'resource', 'second.jpg')
-        img = cv.imread(file_path_img)
+        file_path_occupancy = os.path.join(os.path.dirname(get_package_share_directory('sim_env')), 'sim_env', 'resource', 'occupancy_grid.npy')
+        image_array = np.load(file_path_occupancy)
         rrt = RRT()
-        # Properties of an Image
-        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        ret,thresh = cv.threshold(gray,127,255,0)
 
+        # Ensure the data type is uint8
+        if image_array.dtype != np.uint8:
+            img = (image_array * 255).astype(np.uint8)
+        else:
+            img = image_array.copy()
+
+        # Get only a slice of the occupancy grid (number 1)
+        slice_index = 1
+        img = img[:,:,slice_index]
+
+        # Flip, rotate and resize the image, and invert the colors, to adjust it to the requirements of the algorithm
+        img = cv.flip(img,1)
+        img = cv.rotate(img, cv.ROTATE_90_COUNTERCLOCKWISE)
+        img = 255 - img
+
+        img  = cv.resize(img, (200, 160), interpolation = cv.INTER_LINEAR)
+
+        # Apply a threshold to the image to ensure that there is only black and white colors (0 and 255 values)
+        ret,thresh = cv.threshold(img,254,255,0)
+
+        # Variables to make the algorithm work
         size = img.shape
-        start = (50,50)
-        end = (325,450)
-        rad = 10
+        start = (140,40)
+        end = (20,160)
+        rad = 5
+        done = False
 
         img_print = img.copy()
         image = img.copy()
@@ -85,10 +104,12 @@ class MotionPlannerNode(Node):
         # Draw a circle of red color of thickness -1 px 
         img_print = cv.circle(img_print, (end[1],end[0]), rad, (255,0,0), 1) 
 
+        cv.imshow("Binary Image", image)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
         [V_E, img_print] = rrt.RRT_star(np.squeeze(image), start, end,rad,size,img_print)
         V_E = np.asarray(V_E)
         for i in V_E:
-            #print(V_E.shape)
             if(i.parent != (None,None)):
                 img_print = cv.line(img_print, (i.child[1],i.child[0]), (i.parent[1],i.parent[0]), (255,0,255), 1)
 
@@ -103,9 +124,9 @@ class MotionPlannerNode(Node):
             p1 = V_E_shortest_smoothed[i].child
             p2 = V_E_shortest_smoothed[i + 1].child
             if(i == 0):
-                message.append([V_E_shortest_smoothed[j].child[0]/100, V_E_shortest_smoothed[j].child[1]/100, 0])
+                message.append([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0])
 
-            message.append([V_E_shortest_smoothed[j-1].child[0]/100, V_E_shortest_smoothed[j-1].child[1]/100, 0])
+            message.append([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0])
             j = j-1
 
             img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  # Smoothed path in yellow
