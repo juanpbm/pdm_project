@@ -192,15 +192,15 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.0, 0.0, 1.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size - self.room_size+1/2, 0.0 - (self.room_size-self.door_size)/2 +1/2, 0.4],
+                    'position': [self.boundary_size - self.room_size, 0.0 - (self.room_size-self.door_size)/2 +1/2, 0.4],
                     'width': self.room_size-self.door_size, 'height': self.height, 'length': 0.1
                 },
                 'high': {
-                    'position' : [self.boundary_size - self.room_size+1/2, 0.0 - (self.room_size-self.door_size)/2 +1/2, 0.4],
+                    'position' : [self.boundary_size - self.room_size, 0.0 - (self.room_size-self.door_size)/2 +1/2, 0.4],
                     'width': self.room_size-self.door_size, 'height': self.height, 'length': 0.1,
                 },
                 'low': {
-                    'position' : [self.boundary_size - self.room_size+1/2, 0.0 - (self.room_size-self.door_size)/2 +1/2, 0.4],
+                    'position' : [self.boundary_size - self.room_size, 0.0 - (self.room_size-self.door_size)/2 +1/2, 0.4],
                     'width': self.room_size-self.door_size, 'height': self.height, 'length': 0.1,
                 },
             },

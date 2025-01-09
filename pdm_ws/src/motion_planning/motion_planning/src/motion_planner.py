@@ -5,7 +5,7 @@ import numpy as np
 import cv2 as cv
 import sys
 
-sys.setrecursionlimit(10_000)
+sys.setrecursionlimit(20_000)
 
 # Global variables
 message = []                                                                                                # Message for ros topic
@@ -24,7 +24,7 @@ class Conex:
 
 class RRT:
     def __init__(self):
-        self.N = 10000                                                                                      # Maximum number of iterations
+        self.N = 2000                                                                                      # Maximum number of iterations
         self.gamma = 400                                                                                  # Gamma value for the algorithm
         self.d = 2                                                                                          # d value for the algorithm
 
@@ -203,10 +203,10 @@ class RRT:
 
             # If the new node is not None and the new node is inside the indicated radius
             if(new_node!=None):
-                if(self.EuclideanDistance(end, new_node.child)<=rad_f):
-                    break                                                                                           # Finish the algorithm
+                if(self.EuclideanDistance(end, new_node.child)==0):
+                    idx =  new_node.id                                                                                         # Finish the algorithm
 
-        return V_E,image
+        return V_E,image,idx
 
     # Find the shortest path between the last node and the start one
     def find_shortest(self, shortest, V_E,last):

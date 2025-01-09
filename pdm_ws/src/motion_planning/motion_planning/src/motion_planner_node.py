@@ -116,7 +116,7 @@ class MotionPlannerNode(Node):
         img_print = img.copy()
         image = img.copy()
 
-        kernel = np.ones((8, 8), np.uint8) 
+        kernel = np.ones((6, 6), np.uint8) 
     
         # Using cv2.erode() method  
         image = cv.erode(thresh, kernel, cv.BORDER_REFLECT)  
@@ -130,14 +130,15 @@ class MotionPlannerNode(Node):
         cv.imshow("Binary Image", image)
         cv.waitKey(0)
         cv.destroyAllWindows()
-        [V_E, img_print] = rrt.RRT_star(np.squeeze(image), start, end,rad,size,img_print)
+        [V_E, img_print, id] = rrt.RRT_star(np.squeeze(image), start, end,rad,size,img_print)
+        print("HAS BEEN FOUND: " + str(id))
         V_E = np.asarray(V_E)
         for i in V_E:
             if(i.parent != (None,None)):
                 img_print = cv.line(img_print, (i.child[1],i.child[0]), (i.parent[1],i.parent[0]), (255,0,255), 1)
 
 
-        V_E_shortest = rrt.find_shortest([V_E[-1]],V_E,V_E[-1])
+        V_E_shortest = rrt.find_shortest([V_E[id]],V_E,V_E[id])
 
         V_E_shortest_smoothed = rrt.smooth_path(V_E_shortest, np.squeeze(image))
         message = []
