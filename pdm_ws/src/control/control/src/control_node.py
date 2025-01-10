@@ -34,7 +34,7 @@ class ControlNode(Node):
         self.base_current_pos = np.empty(0)
         self.arm_current_pos = np.empty(0)
         self.base_trajectory = np.empty(0)
-        self.base_trajectory_quadratic = np.empty(0)
+        # self.base_trajectory_quadratic = np.empty(0)
         self.arm_trajectory = np.empty(0)
         self.base_target_reached = False
         self.arm_target_reached = False
@@ -60,10 +60,11 @@ class ControlNode(Node):
             self.base_waypoint = 0
             self.controller.e_prev_base=[0,0,0]
             self.controller.time_prev_base=0
+            self.controller.base_current_target_waypoint=0
             self.base_target_reached = False
             temp_trajectory_base=np.vstack((self.base_current_pos,self.base_trajectory))
-            self.base_trajectory_cubic=self.controller.cubic_spline_interpolation(temp_trajectory_base,self.controller.base_max_vel, 0.01)
-        
+            self.base_trajectory_cubic,self.base_target_waypoints = self.controller.cubic_spline_interpolation(temp_trajectory_base,self.controller.base_max_vel, 0.01)
+
         print(self.base_trajectory_cubic)
 
     def base_pos_callback(self, msg):
@@ -88,11 +89,13 @@ class ControlNode(Node):
             self.arm_waypoint = 0
             self.controller.e_prev_arm=[0,0,0]
             self.controller.time_prev_arm=0
+            self.controller.arm_current_target_waypoint=0
             self.arm_target_reached = False
             # Get current position and trajectory
             current_arm_joint_pos, _ = self.controller.compute_forward_kinematics(self.controller.joints_list, self.arm_current_pos)
             temp_trajectory_arm=np.vstack((current_arm_joint_pos,self.arm_trajectory))
-            self.arm_trajectory_cubic=self.controller.cubic_spline_interpolation(temp_trajectory_arm,self.controller.arm_max_vel, 0.01)
+            self.arm_trajectory_cubic, self.arm_target_waypoints=self.controller.cubic_spline_interpolation(temp_trajectory_arm,self.controller.arm_max_vel, 0.01)
+        # print(self.arm_trajectory_cubic)
 
     def arm_pos_callback(self, msg):
         self.get_logger().info('Got arm pos in Control Node sub: "%s"' % msg.data)
@@ -102,7 +105,8 @@ class ControlNode(Node):
         print('arm current pos', self.arm_current_pos)
 
     def move_base(self):
-        action, self.base_target_reached, self.base_waypoint = self.controller.run_panda_base(self.base_current_pos, self.base_trajectory_cubic, self.base_waypoint, self.base_target_reached)
+        
+        action, self.base_target_reached, self.base_waypoint = self.controller.run_panda_base(self.base_current_pos, self.base_trajectory_cubic,self.base_trajectory, self.base_target_waypoints, self.base_waypoint, self.base_target_reached)
 
         # Construct the cmd_vel msg for the base
         msg = Float64MultiArray()
@@ -113,7 +117,8 @@ class ControlNode(Node):
         self.get_logger().info('Publishing base actions from control Node: "%s"' % msg.data)
 
     def move_arm(self):
-        action, self.arm_target_reached, self.arm_waypoint = self.controller.run_panda_arm(self.arm_current_pos, self.arm_trajectory_cubic, self.arm_waypoint, self.arm_target_reached)
+        
+        action, self.arm_target_reached, self.arm_waypoint = self.controller.run_panda_arm(self.arm_current_pos, self.arm_trajectory_cubic, self.arm_trajectory,self.arm_target_waypoints, self.arm_waypoint, self.arm_target_reached)
         
         # Construct the cmd_vel msg for the joints
         msg = Float64MultiArray()
