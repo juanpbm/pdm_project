@@ -18,7 +18,7 @@ class Panda_Sym:
         self.render = render
         self.init_pos = np.array([0,0,0])
         self.env: UrdfEnv = None
-        self.map_number = 1 # np.random.randint(1, 5)
+        self.map_number = np.random.randint(1, 5)
 
         self.Gen_Env()
         self.run_point_robot_with_occupancy_sensor()
