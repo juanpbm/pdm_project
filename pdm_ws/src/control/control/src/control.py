@@ -297,7 +297,7 @@ class Controller:
         # Get current position and trajectory
         current_arm_joint_pos, current_orientation = self.compute_forward_kinematics(self.joints_list, arm_current_pos)
         
-        target_orientation = np.array([1, 0, 0]) # Euler Angles TODO: where would this come from. 
+        target_orientation = np.array([ 3.14, -0.37,  0.  ]) # Euler Angles TODO: where would this come from. 
         actions_to_send = np.zeros(self.n_actions)
 
             
