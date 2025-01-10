@@ -1,16 +1,9 @@
+import cv2 as cv
+from motion_planning.src.motion_planner import RRT
+import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-import numpy as np
-from std_msgs.msg import Float64MultiArray, MultiArrayDimension, String
-import cv2 as cv
-from motion_planning.src.motion_planner import RRT
-
-from ament_index_python.packages import get_package_share_directory
-import os
-
-import matplotlib.pyplot as plt
-
 from std_msgs.msg import Float64MultiArray, MultiArrayDimension, Int32
 
 class MotionPlannerNode(Node):
@@ -36,7 +29,7 @@ class MotionPlannerNode(Node):
         self.map = None
         self.base_trajectory = np.empty(0)
         self.arm_trajectory = np.empty(0)
-        print("motion_planner Node has been created.")
+        self.get_logger().info("motion_planner Node has been created.")
 
     def map_callback(self, msg):
         self.get_logger().info('Got Map in Motion Planning Node sub')
@@ -48,13 +41,6 @@ class MotionPlannerNode(Node):
                 return
             shape = tuple(dim.size for dim in dims)
             self.map = np.array(msg.data).reshape(shape)
-
-            slice_index = 1
-            slice_data = self.map[:,:,slice_index]
-
-            plt.imshow(slice_data, cmap="gray", origin="lower")
-            plt.title(f"Occupancy map")
-            plt.show()
 
             self.base_trajectory = self.map_rrt()
             print(self.base_trajectory)
@@ -111,8 +97,6 @@ class MotionPlannerNode(Node):
         # Publish arm trajectory
         self.arm_trajectory_publisher_.publish(arm_msg)
         self.get_logger().info('Published arm_target_xyz:"%s"' % arm_msg.data)
-
-    #Functions that use the motion planning class to compute the RRT
 
     def map_rrt(self):
         image_array = self.map
@@ -187,7 +171,6 @@ class MotionPlannerNode(Node):
 
             img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  # Smoothed path in yellow
 
-        # print(message)
         # Display the Binary Image
         cv.imshow("Binary Image", img_print)
         cv.waitKey(0)
@@ -209,7 +192,7 @@ def main(args=None):
         if rclpy.ok():
             rclpy.shutdown()
             
-        print("motion_planner Node has been shut down.")
+        motion_planner_node.get_logger().info("motion_planner Node has been shut down.")
 
 if __name__ == "__main__":
     # Call Main Function

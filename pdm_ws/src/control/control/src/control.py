@@ -36,7 +36,7 @@ class Controller:
         self.arm_current_target_waypoint=0
         self.base_current_target_waypoint=0
 
-        # path to pikle files containing arm information
+        # path to pickle files containing arm information
         file_path_axis = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_axis.pickle')
         file_path_origin = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_origin.pickle')
 
@@ -130,7 +130,7 @@ class Controller:
 
         # Generate points along the spline
         total_time = times[-1]
-        time_new =np.arange(0,total_time, desired_dt)
+        time_new = np.arange(0,total_time, desired_dt)
         x_new = np.zeros_like(time_new)
         y_new = np.zeros_like(time_new)
         z_new = np.zeros_like(time_new)
@@ -201,7 +201,7 @@ class Controller:
         return action, base_target_reached, base_waypoint
     
     def revolute_transform(self, axis, angle):
-        """Compute the rotation matrix for a revolute joint."""
+        # Compute the rotation matrix for a revolute joint.
         cosine= np.cos(angle) 
         sine=np.sin(angle)
         R = np.eye(3)
@@ -216,7 +216,7 @@ class Controller:
         return transformation_matrix
 
     def compute_forward_kinematics(self, robot_joints, joint_angles):
-        """Compute the forward kinematics to get the end-effector position."""
+        # Compute the forward kinematics to get the end-effector position.
         # Start with the identity matrix
         T = np.eye(4)  
         for x in range(len(robot_joints)-2):
@@ -232,7 +232,7 @@ class Controller:
         return position, orientation_euler 
 
     def compute_jacobian(self, robot_joints, joint_angles, p_end):
-        """Compute the Jacobian for the robot given joint angles."""
+        # Compute the Jacobian for the robot given joint angles.
         T = np.eye(4)  # Start with the identity matrix
         J = []  # Initialize Jacobian matrix
 
@@ -256,9 +256,9 @@ class Controller:
     
     def calc_rot_error(self, reference, actual):
 
-        Actual_Matrix=actual[:3, :3]
-        Reference_Matrix=reference[:3, :3]
-        err=0.5 *(np.cross(Actual_Matrix[:,0],Reference_Matrix[:,0])
+        Actual_Matrix = actual[:3, :3]
+        Reference_Matrix = reference[:3, :3]
+        err = 0.5 *(np.cross(Actual_Matrix[:,0],Reference_Matrix[:,0])
                  +np.cross(Actual_Matrix[:,1],Reference_Matrix[:,1])
                  +np.cross(Actual_Matrix[:,2],Reference_Matrix[:,2]))
       
