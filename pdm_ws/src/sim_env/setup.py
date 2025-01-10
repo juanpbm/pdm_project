@@ -30,9 +30,6 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/gym_envs_urdf', gym_envs_urdf_files),
-        ('share/' + package_name + '/resource', [
-            'resource/occupancy_grid.npy',
-        ]),
     ],
     install_requires=['setuptools', 'urdfenvs', 'keyboard'],
     zip_safe=True,
