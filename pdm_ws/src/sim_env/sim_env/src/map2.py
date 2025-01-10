@@ -277,7 +277,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2 -2.0, -7.5, 0.4], 
+                    'position': [self.boundary_size/2 -1.5, -7.5, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))
@@ -287,7 +287,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2, -4.0, 0.4], 
+                    'position': [self.boundary_size/2, -4.0, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))
@@ -297,7 +297,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2 +2.0, -7.5, 0.4], 
+                    'position': [self.boundary_size/2 +2.0, -7.5, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))
@@ -307,7 +307,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2 -2.0, -16/2-4.0, 0.4], 
+                    'position': [self.boundary_size/2 -1.5, -16/2-4.0, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))
@@ -317,7 +317,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2, -16/2-4.0, 0.4], 
+                    'position': [self.boundary_size/2, -16/2-4.0, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))
@@ -327,7 +327,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2 +2.0, -16/2-4.0, 0.4], 
+                    'position': [self.boundary_size/2 +2.0, -16/2-4.0, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))

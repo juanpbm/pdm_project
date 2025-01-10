@@ -249,7 +249,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.0, 1.0, 0.0, 1.0],
                 'geometry': {
-                    'position': [10.0, -8.0 , 0.4], 
+                    'position': [10.5, -8.0 , 0.4], 
                     'width': self.obstacle_size, 'height': self.obstacle_size, 'length': self.obstacle_size
                 }
             }))
@@ -259,7 +259,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.0, 1.0, 0.0, 1.0],
                 'geometry': {
-                    'position': [10.0, -6.0, 0.4],
+                    'position': [9.5, -7.0, 0.4],
                     'width': self.obstacle_size, 'height': self.obstacle_size, 'length': self.obstacle_size
                 }
             }))
@@ -277,7 +277,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2 -2.0, -7.5, 0.4], 
+                    'position': [self.boundary_size/2 -2.0, -8, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))
@@ -287,7 +287,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2+2.0, -2.0, 0.4], 
+                    'position': [self.boundary_size/2+2.0, -2.0, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))
@@ -297,7 +297,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2 +2.0, -7.5, 0.4], 
+                    'position': [self.boundary_size/2 +2.0, -8, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))
@@ -307,7 +307,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2 -2.0, -13.0, 0.4], 
+                    'position': [self.boundary_size/2 -2.0, -14.0, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))
@@ -317,7 +317,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2-2.0, -2.0, 0.4], 
+                    'position': [self.boundary_size/2-2.0, -2.0, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))
@@ -327,7 +327,7 @@ class Panda_Sym:
                 'type': 'box', 
                 "rgba": [0.5, 0.5, 0.0, 1.0],
                 'geometry': {
-                    'position': [self.boundary_size/2 +2.0, -13.0, 0.4], 
+                    'position': [self.boundary_size/2 +2.0, -14.0, self.height / 2.0], 
                     'width':  4, 'height': self.height, 'length': self.obstacle_size+0.5
                 }
             }))
