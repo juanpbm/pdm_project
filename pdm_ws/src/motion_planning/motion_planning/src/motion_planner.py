@@ -18,7 +18,7 @@ class Conex:
 
 class RRT:
     def __init__(self):
-        self.N = 2000                                                                                      # Maximum number of iterations
+        self.N = 1200                                                                                      # Maximum number of iterations
         self.gamma = 400                                                                                  # Gamma value for the algorithm
         self.d = 2                                                                                          # d value for the algorithm
 
@@ -80,7 +80,7 @@ class RRT:
         return True
     
     # Update the costs of the different nodes when updating the position of one of the nodes of the graph
-    def update_costs(self,node, V_E, img,i=0):
+    def update_costs(self,node, V_E):
         stack = [node]                                                                                              # Initialize a stack and a visited set
         visited = set()                                                                                             # Set to track visited nodes
 
@@ -127,6 +127,7 @@ class RRT:
         s = Conex((None,None),start, None,0)
         V_E = []
         V_E.append(s)
+        end_reached = False
 
         # Go through iterations to get the trajectory in order to arrive at the goal position
         for n in tqdm(range(self.N)):
@@ -143,7 +144,7 @@ class RRT:
             #   - The line between the closes neighbor and the point must be clear (do not go through an obstacle)
             while(ok == False):
                 # With a 10% of probability, the new node will be the last node - THIS IS NOT PART OF THE RRT* BUT AN IMPROVEMENT FOR OUR PROBLEM
-                if np.random.uniform(0, 1) < 0.1:
+                if (np.random.uniform(0, 1) < 0.1 and end_reached == False):
                     new_w = end[0]
                     new_h = end[1]
                 else:
@@ -158,10 +159,13 @@ class RRT:
                     [closest, neighbor, cost] = self.GetClosestNeighbor(new_w,new_h,V_E,rad)                            # Get the closest neightbour to the point
 
                     # If it is a valid neighbor
-                    if(closest.id != -1):
-                        # If there is a clear line between the point and the closest neighbor
+                    if(closest.id != -1 and closest.child!=end):
+                        # If there is a clear line between the point and the closest neightbour
                         if(self.ClearLine(new_w,new_h,closest,img) == True):
                             # Create and add the node to the list
+                            if((new_w,new_h) == end):
+                                end_reached = True
+
                             new_node = Conex(closest.child,(new_w,new_h), cost,n+1)
                             V_E.append(new_node)
 
@@ -175,13 +179,13 @@ class RRT:
                                 #   - The new neighbor is  not the closest one
                                 #   - There is a clear line between the neighbor and the new node
                                 if((n.cost != None and cost + self.EuclideanDistance(new_node.child,n.child) < n.cost) and n.id!=closest.id 
-                                and self.ClearLine(n.child[0],n.child[1],new_node,img) == True):
+                                and self.ClearLine(n.child[0],n.child[1],new_node,img) == True and n.child!=end):
                                     # Update the cost of the 
                                     V_E[n.id].parent = new_node.child
                                     V_E[n.id].cost = cost + self.EuclideanDistance(new_node.child, n.child)
 
                                     # Update the costs of the child nodes of the update node
-                                    self.update_costs(n, V_E, img)
+                                    self.update_costs(n, V_E)
 
                         else:
                             ok = False

@@ -4,19 +4,28 @@ import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from std_msgs.msg import Float64MultiArray, MultiArrayDimension
+from std_msgs.msg import Float64MultiArray, MultiArrayDimension, Int32
 
 class MotionPlannerNode(Node):
     def __init__(self):
         super().__init__('motion_planner')
         self.base_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'base_trajectory', 10)
         self.arm_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'arm_trajectory', 10)
-        self.subscription = self.create_subscription(
+        self.subscription_ = self.create_subscription(
             Float64MultiArray,
             'map',
             self.map_callback,
             10)
 
+        self.new_state_subscription_ = self.create_subscription(
+            Int32,
+            'new_state',
+            self.new_state_callback,
+            10)
+        
+        self.state_ = 0
+
+        # TODO: what other information or topics are needed?
         self.map = None
         self.base_trajectory = np.empty(0)
         self.arm_trajectory = np.empty(0)
@@ -34,17 +43,37 @@ class MotionPlannerNode(Node):
             self.map = np.array(msg.data).reshape(shape)
 
             self.base_trajectory = self.map_rrt()
+            self.get_logger().info('generated base_trajectory:"%s"' % self.base_trajectory)
 
-        # Dummy trajectory. The computed trajectory should return something similar
-        self.arm_trajectory = np.array([[0.6, 0, 0.5]])
-        self.pub_trajectories()
+    # Get the new environment from the environment
+    def new_state_callback(self, msg):
+        self.state_ = msg.data
+        if(self.state_ == 1):
+            while(self.base_trajectory == np.empty(0)):
+                return
+            # Dummy trajectory. The computed trajectory should return something similar
+            self.arm_trajectory = np.array([[0.3, 0.2, 0.7]])
+        
+        if(self.state_ == 3):
+            # Dummy trajectory. The computed trajectory should return something similar
+            self.arm_trajectory = np.array([[0.3, 0.1, 0.5]])
 
-    def pub_trajectories(self):
-        # Create array message with the base trajectory information
+        if(self.state_ == 4):
+            # Dummy trajectory. The computed trajectory should return something similar
+            self.arm_trajectory = np.array([[0.3, 0.2, 0.7]])
+
+        if(self.state_ == 5):
+            self.base_trajectory = self.base_trajectory[::-1]
+
+        if(self.state_ == 6):
+            # Dummy trajectory. The computed trajectory should return something similar
+            self.arm_trajectory = np.array([[0.6, 0, 0.5]])
+            
+            # Create array message with the base trajectory information
         base_msg = Float64MultiArray()
         base_msg.data = self.base_trajectory.flatten().tolist()
         assert all(isinstance(val, float) for val in base_msg.data) # All elements must be floats
-        # Define dimensions of the msg to reconstruct by the subscribers
+            # Define dimensions of the msg to reconstruct by the subscribers
         base_msg.layout.dim.append(MultiArrayDimension(label='rows', size=self.base_trajectory.shape[0], stride=self.base_trajectory.shape[1] * self.base_trajectory.shape[0]))
         base_msg.layout.dim.append(MultiArrayDimension(label='cols', size=self.base_trajectory.shape[1], stride=self.base_trajectory.shape[1]))
 
