@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from sim_env.src.map3 import Panda_Sym
+from sim_env.src.robot_env import Panda_Sym
 import warnings
 import gymnasium as gym
 import numpy as np
