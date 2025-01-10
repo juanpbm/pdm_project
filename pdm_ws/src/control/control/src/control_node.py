@@ -34,7 +34,6 @@ class ControlNode(Node):
         self.base_current_pos = np.empty(0)
         self.arm_current_pos = np.empty(0)
         self.base_trajectory = np.empty(0)
-        # self.base_trajectory_quadratic = np.empty(0)
         self.arm_trajectory = np.empty(0)
         self.base_target_reached = False
         self.arm_target_reached = False
@@ -45,7 +44,6 @@ class ControlNode(Node):
         self.get_logger().info("control Node has been created.")
 
     def base_trajectory_callback(self, msg):
-        self.get_logger().info('Got base trajectory in Control Node sub: "%s"' % msg.data)
         
         # Recover trajectory information as a 2D Array
         trajectory_data = msg.data
@@ -64,18 +62,14 @@ class ControlNode(Node):
             self.base_target_reached = False
             temp_trajectory_base=np.vstack((self.base_current_pos,self.base_trajectory))
             self.base_trajectory_cubic,self.base_target_waypoints = self.controller.cubic_spline_interpolation(temp_trajectory_base,self.controller.base_max_vel, 0.01)
+            self.get_logger().info('Got base trajectory in Control Node sub: "%s"' % self.base_trajectory_cubic)
 
-        print(self.base_trajectory_cubic)
-
-    def base_pos_callback(self, msg):
-        self.get_logger().info('Got base pos in Control Node sub: "%s"' % msg)
-        
+    def base_pos_callback(self, msg):    
         # Recover position information as a 1D array
         self.base_current_pos = np.array([msg.x, msg.y, msg.z], dtype=float)
+        self.get_logger().info('Got base pos in Control Node sub: "%s"' % self.base_current_pos)
 
     def arm_trajectory_callback(self, msg):
-        self.get_logger().info('Got arm trajectory in Control Node arm sub: "%s"' % msg.data)
-        
         # Recover trajectory information as a 2D Array
         trajectory_data = msg.data
         rows = msg.layout.dim[0].size
@@ -95,14 +89,12 @@ class ControlNode(Node):
             current_arm_joint_pos, _ = self.controller.compute_forward_kinematics(self.controller.joints_list, self.arm_current_pos)
             temp_trajectory_arm=np.vstack((current_arm_joint_pos,self.arm_trajectory))
             self.arm_trajectory_cubic, self.arm_target_waypoints=self.controller.cubic_spline_interpolation(temp_trajectory_arm,self.controller.arm_max_vel, 0.01)
-        # print(self.arm_trajectory_cubic)
+            self.get_logger().info('Got arm trajectory in Control Node arm sub: "%s"' % self.arm_trajectory_cubic)
 
     def arm_pos_callback(self, msg):
-        self.get_logger().info('Got arm pos in Control Node sub: "%s"' % msg.data)
-        
         # Recover position information as a 1D array
         self.arm_current_pos = np.array(msg.data, dtype=float)
-        print('arm current pos', self.arm_current_pos)
+        self.get_logger().info('Got arm pos in Control Node sub: "%s"' % self.arm_current_pos)
 
     def move_base(self):
         

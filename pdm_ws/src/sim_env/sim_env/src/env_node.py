@@ -25,12 +25,11 @@ class PandaEnvNode(Node):
 
 
     def cmd_callback(self, msg):
-        self.get_logger().info('Got vel command in panda_env Node sub: "%s"' % msg.data)
         # Turn message into np array
         action = np.array(msg.data)
+        self.get_logger().info('Got vel command in panda_env Node sub: "%s"' % action)
         # Call the function that moves the robot with the received action command
         self.panda_sym.move_panda(action)
-
 
     def pub_map(self):
         ob = self.panda_sym.Get_Ob()
