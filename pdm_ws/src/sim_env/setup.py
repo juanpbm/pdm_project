@@ -31,7 +31,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/gym_envs_urdf', gym_envs_urdf_files),
     ],
-    install_requires=['setuptools', 'urdfenvs', 'keyboard'],
+    install_requires=['setuptools', 'urdfenvs', 'keyboard', 'numpy'],
     zip_safe=True,
     maintainer='juaber',
     maintainer_email='jbernalmedina@tudelft.nl',

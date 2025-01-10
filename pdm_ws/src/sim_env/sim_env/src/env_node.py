@@ -1,12 +1,12 @@
+from geometry_msgs.msg import Point
+import gymnasium as gym
+import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from sim_env.src.robot_env import Panda_Sym
-import warnings
-import gymnasium as gym
-import numpy as np
-from geometry_msgs.msg import Point
 from std_msgs.msg import Float64MultiArray, MultiArrayDimension
+import warnings
 
 class PandaEnvNode(Node):
     def __init__(self):
@@ -22,7 +22,7 @@ class PandaEnvNode(Node):
         
         self.panda_sym = Panda_Sym(render=True)
         # TODO: what other information or topics are needed?
-        print("panda env Node has been created.")
+        self.get_logger().info("panda env Node has been created.")
 
 
     def cmd_callback(self, msg):
@@ -99,7 +99,7 @@ def main(args=None):
         if rclpy.ok():
             rclpy.shutdown()
             
-        print("panda env Node has been shut down.")
+        panda_env_node.get_logger().info("panda env Node has been shut down.")
 
 if __name__ == "__main__":
     # Call Main Function

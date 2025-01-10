@@ -32,7 +32,7 @@ class Controller:
         self.e_prev_base=[0,0,0]
         self.time_prev_base=0
 
-        # path to pikle files containing arm information
+        # path to pickle files containing arm information
         file_path_axis = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_axis.pickle')
         file_path_origin = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_origin.pickle')
 
@@ -126,7 +126,7 @@ class Controller:
 
         # Generate points along the spline
         total_time = times[-1]
-        time_new =np.arange(0,total_time, desired_dt)
+        time_new = np.arange(0,total_time, desired_dt)
         x_new = np.zeros_like(time_new)
         y_new = np.zeros_like(time_new)
         z_new = np.zeros_like(time_new)
@@ -163,7 +163,7 @@ class Controller:
             else:   
                 error_xyz = base_trajectory[-1] - current_xyz[:3]
 
-            Derivative_error=self.Kd*(error_xyz - self.e_prev_base)/(base_waypoint+1 - self.time_prev_base)
+            Derivative_error = self.Kd*(error_xyz - self.e_prev_base)/(base_waypoint+1 - self.time_prev_base)
             desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
             action_to_send = desired_velocity_xyz
 
@@ -182,7 +182,7 @@ class Controller:
         return action, base_target_reached, base_waypoint
     
     def revolute_transform(self, axis, angle):
-        """Compute the rotation matrix for a revolute joint."""
+        # Compute the rotation matrix for a revolute joint.
         cosine= np.cos(angle) 
         sine=np.sin(angle)
         R = np.eye(3)
@@ -197,7 +197,7 @@ class Controller:
         return transformation_matrix
 
     def compute_forward_kinematics(self, robot_joints, joint_angles):
-        """Compute the forward kinematics to get the end-effector position."""
+        # Compute the forward kinematics to get the end-effector position.
         # Start with the identity matrix
         T = np.eye(4)  
         for x in range(len(robot_joints)-2):
@@ -213,7 +213,7 @@ class Controller:
         return position, orientation_euler 
 
     def compute_jacobian(self, robot_joints, joint_angles, p_end):
-        """Compute the Jacobian for the robot given joint angles."""
+        # Compute the Jacobian for the robot given joint angles.
         T = np.eye(4)  # Start with the identity matrix
         J = []  # Initialize Jacobian matrix
 
@@ -237,9 +237,9 @@ class Controller:
     
     def calc_rot_error(self, reference, actual):
 
-        Actual_Matrix=actual[:3, :3]
-        Reference_Matrix=reference[:3, :3]
-        err=0.5 *(np.cross(Actual_Matrix[:,0],Reference_Matrix[:,0])
+        Actual_Matrix = actual[:3, :3]
+        Reference_Matrix = reference[:3, :3]
+        err = 0.5 *(np.cross(Actual_Matrix[:,0],Reference_Matrix[:,0])
                  +np.cross(Actual_Matrix[:,1],Reference_Matrix[:,1])
                  +np.cross(Actual_Matrix[:,2],Reference_Matrix[:,2]))
       
@@ -289,12 +289,11 @@ class Controller:
                 error_xyz = arm_trajectory[-1] - current_arm_joint_pos[:3]
                
 
-            Derivative_error=self.Kd*(error_xyz - self.e_prev_arm)/(arm_waypoint+1 - self.time_prev_arm)
+            Derivative_error = self.Kd*(error_xyz - self.e_prev_arm)/(arm_waypoint+1 - self.time_prev_arm)
             desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
             actions_to_send = desired_velocity_xyz
 
             
-
             self.e_prev_arm = error_xyz
             self.time_prev_arm = arm_waypoint
         
@@ -314,7 +313,7 @@ class Controller:
             J= self.compute_jacobian(self.joints_list, arm_current_pos, current_arm_joint_pos)
             joint_velocities = self.pseudo_jacobian(J, desired_velocity)
 
-            actions_to_send=joint_velocities
+            actions_to_send = joint_velocities
             arm_waypoint += 1
             
         else:

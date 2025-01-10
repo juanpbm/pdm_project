@@ -1,10 +1,10 @@
+from control.src.control import Controller
 from geometry_msgs.msg import Point
 import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
-from control.src.control import Controller
 
 class ControlNode(Node):
     def __init__(self):
@@ -42,13 +42,10 @@ class ControlNode(Node):
         self.arm_waypoint = 0
         self.controller = Controller()
 
-        
-    
-        # TODO: what other information or topics are needed?
-        print("control Node has been created.")
+        self.get_logger().info("control Node has been created.")
 
     def base_trajectory_callback(self, msg):
-        self.get_logger().info('Got in Control Node base traj sub: "%s"' % msg.data)
+        self.get_logger().info('Got base trajectory in Control Node sub: "%s"' % msg.data)
         
         # Recover trajectory information as a 2D Array
         trajectory_data = msg.data
@@ -70,13 +67,13 @@ class ControlNode(Node):
         print(self.base_trajectory_cubic)
 
     def base_pos_callback(self, msg):
-        self.get_logger().info('Got in Control Node base pos sub: "%s"' % msg)
+        self.get_logger().info('Got base pos in Control Node sub: "%s"' % msg)
         
         # Recover position information as a 1D array
         self.base_current_pos = np.array([msg.x, msg.y, msg.z], dtype=float)
 
     def arm_trajectory_callback(self, msg):
-        self.get_logger().info('Got in Control Node arm traj sub: "%s"' % msg.data)
+        self.get_logger().info('Got arm trajectory in Control Node arm sub: "%s"' % msg.data)
         
         # Recover trajectory information as a 2D Array
         trajectory_data = msg.data
@@ -96,14 +93,13 @@ class ControlNode(Node):
             current_arm_joint_pos, _ = self.controller.compute_forward_kinematics(self.controller.joints_list, self.arm_current_pos)
             temp_trajectory_arm=np.vstack((current_arm_joint_pos,self.arm_trajectory))
             self.arm_trajectory_cubic=self.controller.cubic_spline_interpolation(temp_trajectory_arm,self.controller.arm_max_vel, 0.01)
-        # print(self.arm_trajectory_cubic)
 
     def arm_pos_callback(self, msg):
-        self.get_logger().info('Got in Control Node arm pos sub: "%s"' % msg.data)
+        self.get_logger().info('Got arm pos in Control Node sub: "%s"' % msg.data)
         
         # Recover position information as a 1D array
         self.arm_current_pos = np.array(msg.data, dtype=float)
-        print(self.arm_current_pos)
+        print('arm current pos', self.arm_current_pos)
 
     def move_base(self):
         action, self.base_target_reached, self.base_waypoint = self.controller.run_panda_base(self.base_current_pos, self.base_trajectory_cubic, self.base_waypoint, self.base_target_reached)
@@ -114,7 +110,7 @@ class ControlNode(Node):
 
         # Publish cmd_vel msg 
         self.cmd_vel_publisher_.publish(msg)
-        self.get_logger().info('Publishing base action from control Node: "%s"' % msg.data)
+        self.get_logger().info('Publishing base actions from control Node: "%s"' % msg.data)
 
     def move_arm(self):
         action, self.arm_target_reached, self.arm_waypoint = self.controller.run_panda_arm(self.arm_current_pos, self.arm_trajectory_cubic, self.arm_waypoint, self.arm_target_reached)
@@ -125,7 +121,7 @@ class ControlNode(Node):
 
         # Publish cmd_vel msg
         self.cmd_vel_publisher_.publish(msg)
-        self.get_logger().info('Publishing arm action from control Node: "%s"' % msg.data)
+        self.get_logger().info('Publishing arm actions from control Node: "%s"' % msg.data)
 
     def ready_for_base(self):
         # Make sure all the required information is available
@@ -162,7 +158,7 @@ def main(args=None):
         if rclpy.ok():
             rclpy.shutdown()
 
-        print("ControlNode has been shut down.")
+        control_node.get_logger().info("ControlNode has been shut down.")
 
 if __name__ == "__main__":
     # Call Main Function
