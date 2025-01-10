@@ -18,7 +18,7 @@ class Panda_Sym:
         self.render = render
         self.init_pos = np.array([0,0,0])
         self.env: UrdfEnv = None
-        self.map_number = np.random.randint(1, 5)
+        self.map_number = 2#np.random.randint(1, 5)
 
         self.Gen_Env()
         self.run_point_robot_with_occupancy_sensor()
@@ -75,6 +75,7 @@ class Panda_Sym:
         self.Gen_Rooms()
         self.Gen_Room_Obstacles()
         self.Gen_Shelf()
+        self.Gen_Goals()
         self.env = UrdfEnv(dt=0.01, robots=self.panda_robot, render=self.render, num_sub_steps=200,)
 
         for wall in self.boundary_walls:
@@ -93,6 +94,8 @@ class Panda_Sym:
             self.env.add_obstacle(self.shelf5)
             self.env.add_obstacle(self.shelf6)
 
+        self.env.add_obstacle(self.basegoal)
+        self.env.add_obstacle(self.armgoal)
         self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=np.array([0.0, 0.0, 0.0]))
 
 
@@ -109,6 +112,7 @@ class Panda_Sym:
         self.red_room_dicts = map_data.get('red_room_dicts', [])
         self.obstacles = map_data.get('obstacles', [])
         self.shelves = map_data.get('shelves', [])
+        self.goals = map_data.get('goals', [])
 
     def Gen_Panda(self):
         self.panda_robot = [
@@ -145,11 +149,22 @@ class Panda_Sym:
             self.shelf5 = BoxObstacle(name='obstacle1', content_dict=(self.shelves[4]))
             
             self.shelf6 = BoxObstacle(name='obstacle1', content_dict=(self.shelves[5]))
+
+    def Gen_Goals(self):
+    
+        self.basegoal = BoxObstacle(name='obstacle1', content_dict=(self.goals[0]))
+        
+        self.armgoal = BoxObstacle(name='obstacle1', content_dict=(self.goals[1]))
+        self.goal_pos = self.goals[0]['geometry']['position']
+        print(self.goal_pos)
     
     def Get_Ob(self):
         # Get Current position
         self.ob = self.env._get_ob()
         return self.ob
+
+    def Get_Goal_Pos(self):
+        return self.goal_pos
 
     def move_panda(self, action):
         # Move Robot
