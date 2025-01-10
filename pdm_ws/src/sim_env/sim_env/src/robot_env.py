@@ -97,7 +97,7 @@ class Panda_Sym:
 
 
     def Get_Map_Info(self):
-
+        print('Generating map #', self.map_number)
         json_path = os.path.join(os.path.dirname(get_package_share_directory('sim_env')), 'sim_env', 'resource', f"map{self.map_number}.json")
         with open(json_path, 'r') as file:
             map_data = json.load(file)
