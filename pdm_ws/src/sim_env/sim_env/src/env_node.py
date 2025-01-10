@@ -1,12 +1,12 @@
+from geometry_msgs.msg import Point
+import gymnasium as gym
+import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from sim_env.src.robot_env import Panda_Sym
-import warnings
-import gymnasium as gym
-import numpy as np
-from geometry_msgs.msg import Point
 from std_msgs.msg import Float64MultiArray, MultiArrayDimension
+import warnings
 
 class PandaEnvNode(Node):
     def __init__(self):
@@ -22,17 +22,15 @@ class PandaEnvNode(Node):
             10)
         
         self.panda_sym = Panda_Sym(render=True)
-        # TODO: what other information or topics are needed?
-        print("panda env Node has been created.")
+        self.get_logger().info("panda env Node has been created.")
 
 
     def cmd_callback(self, msg):
-        self.get_logger().info('Got vel command in panda_env Node sub: "%s"' % msg.data)
         # Turn message into np array
         action = np.array(msg.data)
+        self.get_logger().info('Got vel command in panda_env Node sub: "%s"' % action)
         # Call the function that moves the robot with the received action command
         self.panda_sym.move_panda(action)
-
 
     def pub_map(self):
         ob = self.panda_sym.Get_Ob()
@@ -114,7 +112,7 @@ def main(args=None):
         if rclpy.ok():
             rclpy.shutdown()
             
-        print("panda env Node has been shut down.")
+        panda_env_node.get_logger().info("panda env Node has been shut down.")
 
 if __name__ == "__main__":
     # Call Main Function

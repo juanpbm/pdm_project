@@ -1,16 +1,15 @@
-import warnings
 import gymnasium as gym
 import numpy as np
-
+from mpscenes.obstacles.sphere_obstacle import SphereObstacle
+from mpscenes.obstacles.box_obstacle import BoxObstacle
 from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
-from mpscenes.obstacles.box_obstacle import BoxObstacle
-from mpscenes.obstacles.sphere_obstacle import SphereObstacle
-
 from urdfenvs.sensors.occupancy_sensor import OccupancySensor
 import json
 import os
 from ament_index_python.packages import get_package_share_directory
+import warnings
+
 
 class Panda_Sym:
     def __init__(self, render=True):
@@ -77,6 +76,7 @@ class Panda_Sym:
         self.Gen_Shelf()
         self.Gen_Goals()
         self.env = UrdfEnv(dt=0.01, robots=self.panda_robot, render=self.render, num_sub_steps=200,)
+        self.env.reconfigure_camera(25.0, 0.0, -35.01, (10, 0, 0))
 
         for wall in self.boundary_walls:
             self.env.add_obstacle(wall)
