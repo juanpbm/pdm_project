@@ -1,4 +1,5 @@
 import cv2 as cv
+from geometry_msgs.msg import Point
 from motion_planning.src.motion_planner import RRT
 import numpy as np
 import rclpy
@@ -11,15 +12,26 @@ class MotionPlannerNode(Node):
         super().__init__('motion_planner')
         self.base_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'base_trajectory', 10)
         self.arm_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'arm_trajectory', 10)
-        self.subscription = self.create_subscription(
+        self.map_subscription_ = self.create_subscription(
             Float64MultiArray,
             'map',
             self.map_callback,
             10)
-
+        self.goal_subscription_ = self.create_subscription(
+            Point,
+            'goal_pos',
+            self.goal_callback,
+            10)
+        self.init_pos_subscription_ = self.create_subscription(
+            Point,
+            'init_pos',
+            self.init_callback,
+            10)
         self.map = None
         self.base_trajectory = np.empty(0)
         self.arm_trajectory = np.empty(0)
+        self.base_goal = np.empty(0)
+        self.init_pos = np.empty(0)
         self.get_logger().info("motion_planner Node has been created.")
 
     def map_callback(self, msg):
@@ -38,6 +50,16 @@ class MotionPlannerNode(Node):
         # Dummy trajectory. The computed trajectory should return something similar
         self.arm_trajectory = np.array([[0.6, 0, 0.5]])
         self.pub_trajectories()
+
+    def goal_callback(self, msg):
+        self.get_logger().info('Got goal pos in motion planner:"%s"' % msg)
+        self.arm_goal = np.array([msg.x, msg.y, msg.z], dtype=int)
+        self.base_goal = np.array([msg.x - 0.5, msg.y, msg.z], dtype=int)
+    
+    def init_callback(self, msg):
+        self.get_logger().info('Got init pos in motion planner:"%s"' % msg)
+        self.init_pos = np.array([msg.x, msg.y, msg.z], dtype=int)
+        print('aqui llego')
 
     def pub_trajectories(self):
         # Create array message with the base trajectory information
@@ -90,11 +112,10 @@ class MotionPlannerNode(Node):
 
         # Variables to make the algorithm work
         size = img.shape
-        start = (140,40)
-        end = (20,160)
+        start = (np.abs(self.init_pos[1]) * 10, self.init_pos[0] * 10)
+        end = (np.abs(self.base_goal[1]) * 10, self.base_goal[0] * 10)
         rad = 5
         done = False
-
         img_print = img.copy()
         image = img.copy()
 
@@ -142,6 +163,8 @@ class MotionPlannerNode(Node):
         cv.waitKey(0)
         cv.destroyAllWindows()
         return np.array(message)
+    def map_ready(self):
+        return self.map is not None and self.base_goal.size != 0
     
 def main(args=None):
     # start the motion planning node

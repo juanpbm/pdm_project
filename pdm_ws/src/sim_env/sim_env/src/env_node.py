@@ -15,6 +15,7 @@ class PandaEnvNode(Node):
         self.base_pos_publisher_ = self.create_publisher(Point, 'base_pos', 10)
         self.arm_pos_publisher_ = self.create_publisher(Float64MultiArray, 'arm_pos', 10)
         self.goal_pos_publisher_ = self.create_publisher(Point, 'goal_pos', 10)
+        self.init_pos_publisher_ = self.create_publisher(Point, 'init_pos', 10)
         self.cmd_vel_subscription = self.create_subscription(
             Float64MultiArray,
             'cmd_vel',
@@ -79,7 +80,7 @@ class PandaEnvNode(Node):
 
     def pub_goal_pos(self):
         # Get the current position of the robot
-        goal_pos = np.array(self.panda_sym.Get_Goal_Pos(), dtype=np.float64)
+        goal_pos = np.array(self.panda_sym.Get_Goal_Pos(), dtype=float)
 
         # Create Point msg
         msg = Point()
@@ -90,6 +91,19 @@ class PandaEnvNode(Node):
         self.goal_pos_publisher_.publish(msg)
         self.get_logger().info('Publishing goal pos from panda_env Node: "%s"' % msg)
 
+    def pub_init_pos(self):
+        # Get the current position of the robot
+        init_pos = np.array(self.panda_sym.Get_Init_Pos(), dtype=float)
+
+        # Create Point msg
+        msg = Point()
+        msg.x = init_pos[0] 
+        msg.y = init_pos[1] 
+        msg.z = init_pos[2]
+        # Publish current position
+        self.init_pos_publisher_.publish(msg)
+        self.get_logger().info('Publishing init pos from panda_env Node: "%s"' % msg)
+
     #Functions that use the env class
     
 def main(args=None):
@@ -98,8 +112,9 @@ def main(args=None):
         rclpy.init(args=args)
         panda_env_node = PandaEnvNode()
         while(rclpy.ok()):
-            panda_env_node.pub_map()
             panda_env_node.pub_goal_pos()
+            panda_env_node.pub_init_pos()
+            panda_env_node.pub_map()
             panda_env_node.pub_base_pos()
             panda_env_node.pub_arm_pos()
             rclpy.spin_once(panda_env_node, timeout_sec=5)

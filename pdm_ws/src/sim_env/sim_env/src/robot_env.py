@@ -94,8 +94,8 @@ class Panda_Sym:
             self.env.add_obstacle(self.shelf5)
             self.env.add_obstacle(self.shelf6)
 
-        self.env.add_obstacle(self.basegoal)
-        self.env.add_obstacle(self.armgoal)
+        self.env.add_obstacle(self.base_goal)
+        self.env.add_obstacle(self.arm_goal)
         self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=np.array([0.0, 0.0, 0.0]))
 
 
@@ -152,11 +152,10 @@ class Panda_Sym:
 
     def Gen_Goals(self):
     
-        self.basegoal = BoxObstacle(name='obstacle1', content_dict=(self.goals[0]))
+        self.base_goal = BoxObstacle(name='obstacle1', content_dict=(self.goals[0]))
         
-        self.armgoal = BoxObstacle(name='obstacle1', content_dict=(self.goals[1]))
+        self.arm_goal = BoxObstacle(name='obstacle1', content_dict=(self.goals[1]))
         self.goal_pos = self.goals[0]['geometry']['position']
-        print(self.goal_pos)
     
     def Get_Ob(self):
         # Get Current position
@@ -165,6 +164,9 @@ class Panda_Sym:
 
     def Get_Goal_Pos(self):
         return self.goal_pos
+
+    def Get_Init_Pos(self):
+        return self.init_pos
 
     def move_panda(self, action):
         # Move Robot
