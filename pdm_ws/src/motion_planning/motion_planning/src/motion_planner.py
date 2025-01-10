@@ -169,7 +169,7 @@ class RRT:
                     [closest, neight, cost] = self.GetClosestNeightbour(new_w,new_h,V_E,rad)                            # Get the closest neightbour to the point
 
                     # If it is a valid neightbour
-                    if(closest.id != -1):
+                    if(closest.id != -1 and closest.child!=end):
                         # If there is a clear line between the point and the closest neightbour
                         if(self.ClearLine(new_w,new_h,closest,img) == True):
                             # Create and add the node to the list
@@ -186,7 +186,7 @@ class RRT:
                                 #   - The new neightbour is  not the closest one
                                 #   - There is a clear line between the neightbour and the new node
                                 if((n.cost != None and cost + self.EuclideanDistance(new_node.child,n.child) < n.cost) and n.id!=closest.id 
-                                and self.ClearLine(n.child[0],n.child[1],new_node,img) == True):
+                                and self.ClearLine(n.child[0],n.child[1],new_node,img) == True and n.child!=end):
                                     # Update the cost of the 
                                     V_E[n.id].parent = new_node.child
                                     V_E[n.id].cost = cost + self.EuclideanDistance(new_node.child, n.child)
