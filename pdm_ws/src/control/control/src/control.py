@@ -31,6 +31,8 @@ class Controller:
         self.time_prev_arm=0
         self.e_prev_base=[0,0,0]
         self.time_prev_base=0
+        self.arm_current_target_waypoint=0
+        self.base_current_target_waypoint=0
 
         # path to pikle files containing arm information
         file_path_axis = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_axis.pickle')
@@ -144,10 +146,22 @@ class Controller:
                     z_new[j] = az * dt**3 + bz * dt**2 + cz * dt + dz
                     coordinates_trajectory.append([x_new[j], y_new[j], z_new[j]])
 
-        return np.array(coordinates_trajectory)
+        coordinates_trajectory=np.array(coordinates_trajectory)
+        target_waypoints=np.zeros(len(via_points)-1)
+        b=0
+        
+        if (len(target_waypoints)>1):
+            for a in range(len(coordinates_trajectory)):
+                if (np.linalg.norm(coordinates_trajectory[a]-via_points[b+1])<0.01):
+                    target_waypoints[b]=a
+                    b+=1
+            target_waypoints=np.array(target_waypoints)
+        else: 
+            target_waypoints=np.array([len(coordinates_trajectory)-1])
+        return coordinates_trajectory, target_waypoints
 
 
-    def run_panda_base(self, current_xyz, base_trajectory, base_waypoint, base_target_reached):
+    def run_panda_base(self, current_xyz, base_trajectory_cubic, base_target_trajectory, base_target_waypoints, base_waypoint, base_target_reached):
 
         action = np.zeros(self.n_actions, dtype=float)
         
@@ -155,22 +169,23 @@ class Controller:
         action_to_send = [0.0,0.0, 0.0]
 
         
-        if(len(base_trajectory)+100>base_waypoint): 
-            if (len(base_trajectory)>base_waypoint): 
-            
-                error_xyz = base_trajectory[base_waypoint] - current_xyz[:3]
-            
-            else:   
-                error_xyz = base_trajectory[-1] - current_xyz[:3]
+        error_xyz = base_trajectory_cubic[base_waypoint] - current_xyz[:3]
+    
+        Derivative_error=self.Kd*(error_xyz - self.e_prev_base)/(base_waypoint+1 - self.time_prev_base)
+        desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
+        action_to_send = desired_velocity_xyz
 
-            Derivative_error=self.Kd*(error_xyz - self.e_prev_base)/(base_waypoint+1 - self.time_prev_base)
-            desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
-            action_to_send = desired_velocity_xyz
+        self.e_prev_base = error_xyz
+        self.time_prev_base = base_waypoint
 
-            self.e_prev_base = error_xyz
-            self.time_prev_base = base_waypoint
-            base_waypoint += 1
-        else:
+        if(base_target_waypoints[self.base_current_target_waypoint]>base_waypoint):
+            base_waypoint+=1 
+        elif((self.base_current_target_waypoint<(len(base_target_trajectory)-1) ) and 
+                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint]-current_xyz)<0.01)):
+            self.base_current_target_waypoint+=1
+        
+        elif((self.base_current_target_waypoint==(len(base_target_trajectory)-1)) and
+                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint]-current_xyz)<0.01)):
             # If all waypoints have been reached stop the base and update the target reached variable
             action_to_send = [0,0,0]
             base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
@@ -272,7 +287,7 @@ class Controller:
 
         return pseudo_inverse @ desired_velocity
 
-    def run_panda_arm(self, arm_current_pos, arm_trajectory, arm_waypoint, arm_target_reached):
+    def run_panda_arm(self, arm_current_pos, arm_trajectory_cubic, arm_target_trajectory, arm_target_waypoints, arm_waypoint, arm_target_reached):
         action = np.zeros(self.n_actions)
     
         # Get current position and trajectory
@@ -281,45 +296,45 @@ class Controller:
         target_orientation = np.array([1, 0, 0]) # Euler Angles TODO: where would this come from. 
         actions_to_send = np.zeros(self.n_actions)
 
-        if(len(arm_trajectory)+100>arm_waypoint):
-            if (len(arm_trajectory)>arm_waypoint): 
             
-                error_xyz = arm_trajectory[arm_waypoint] - current_arm_joint_pos[:3]    
-            else:   
-                error_xyz = arm_trajectory[-1] - current_arm_joint_pos[:3]
-               
+        error_xyz = arm_trajectory_cubic[arm_waypoint] - current_arm_joint_pos[:3]    
+      
+        Derivative_error=self.Kd*(error_xyz - self.e_prev_arm)/(arm_waypoint+1 - self.time_prev_arm)
+        desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
+        actions_to_send = desired_velocity_xyz
 
-            Derivative_error=self.Kd*(error_xyz - self.e_prev_arm)/(arm_waypoint+1 - self.time_prev_arm)
-            desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
-            actions_to_send = desired_velocity_xyz
-
-            
-
-            self.e_prev_arm = error_xyz
-            self.time_prev_arm = arm_waypoint
         
 
-            # Orientation error 
-            current_orientation_matrix = self.euler_to_matrix(current_orientation) 
-            target_orientation_matrix = self.euler_to_matrix(target_orientation) 
-          
-            orientation_error=self.calc_rot_error(target_orientation_matrix, current_orientation_matrix)
-            desired_velocity_orientation = self.Kp * orientation_error
-            
-            if np.linalg.norm(desired_velocity_xyz) > self.arm_max_vel:
-                desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * self.arm_max_vel
+        self.e_prev_arm = error_xyz
+        self.time_prev_arm = arm_waypoint
+    
 
-            desired_velocity = np.hstack((desired_velocity_xyz, desired_velocity_orientation)) 
-           
-            J= self.compute_jacobian(self.joints_list, arm_current_pos, current_arm_joint_pos)
-            joint_velocities = self.pseudo_jacobian(J, desired_velocity)
+        # Orientation error 
+        current_orientation_matrix = self.euler_to_matrix(current_orientation) 
+        target_orientation_matrix = self.euler_to_matrix(target_orientation) 
+        
+        orientation_error=self.calc_rot_error(target_orientation_matrix, current_orientation_matrix)
+        desired_velocity_orientation = self.Kp * orientation_error
+        
+        if np.linalg.norm(desired_velocity_xyz) > self.arm_max_vel:
+            desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * self.arm_max_vel
 
-            actions_to_send=joint_velocities
-            arm_waypoint += 1
-            
-        else:
+        desired_velocity = np.hstack((desired_velocity_xyz, desired_velocity_orientation)) 
+        
+        J= self.compute_jacobian(self.joints_list, arm_current_pos, current_arm_joint_pos)
+        joint_velocities = self.pseudo_jacobian(J, desired_velocity)
+
+        actions_to_send=joint_velocities
+        if(arm_target_waypoints[self.arm_current_target_waypoint]>arm_waypoint):
+            arm_waypoint+=1 
+        elif((self.arm_current_target_waypoint<len(arm_target_trajectory)-1 ) and 
+                (np.linalg.norm(arm_target_trajectory[self.arm_current_target_waypoint]-current_arm_joint_pos)<0.01)):
+            self.arm_current_target_waypoint+=1
+        elif((self.arm_current_target_waypoint==len(arm_target_trajectory)-1 ) and 
+                (np.linalg.norm(arm_target_trajectory[self.arm_current_target_waypoint]-current_arm_joint_pos)<0.01)):
             actions_to_send = np.zeros(self.n_actions)
-            arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue
+            arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue    
+            
 
             
         # These are the instructions to move the arm
