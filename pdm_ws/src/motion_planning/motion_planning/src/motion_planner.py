@@ -136,6 +136,7 @@ class RRT:
         s = Conex((None,None),start, None,0)
         V_E = []
         V_E.append(s)
+        end_reached = False
 
         # Go through iterations to get the trajectory in order to arrive at the goal position
         for n in range(self.N):
@@ -153,7 +154,7 @@ class RRT:
                 new_w = np.random.randint(2,size[0]-2)
                 new_h = np.random.randint(2,size[1]-2)
                 # With a 10% of probability, the new node will be the last node - THIS IS NOT PART OF THE RRT* BUT AN IMPROVEMENT FOR OUR PROBLEM
-                if np.random.uniform(0, 1) < 0.1:
+                if (np.random.uniform(0, 1) < 0.1 and end_reached == False):
                     new_w = end[0]
                     new_h = end[1]
                 else:
@@ -173,6 +174,9 @@ class RRT:
                         # If there is a clear line between the point and the closest neightbour
                         if(self.ClearLine(new_w,new_h,closest,img) == True):
                             # Create and add the node to the list
+                            if((new_w,new_h) == end):
+                                end_reached = True
+
                             new_node = Conex(closest.child,(new_w,new_h), cost,n+1)
                             V_E.append(new_node)
 

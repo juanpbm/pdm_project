@@ -23,10 +23,12 @@ class Controller:
     def __init__(self):
         # Robot constants
         self.n_actions = 12 # Number of actuators only the first 3 are used by the base
-        self.base_max_vel = 1.5 # limit of the robot TODO: get exact value
+        self.base_max_vel = 1 # limit of the robot TODO: get exact value
         self.arm_max_vel = 0.5
-        self.Kp=5
-        self.Kd=2
+        self.Kp=8
+        self.Kd=0
+        self.Ki=0
+        self.integral=0
         self.e_prev_arm=[0,0,0]
         self.time_prev_arm=0
         self.e_prev_base=[0,0]
@@ -151,10 +153,6 @@ class Controller:
         b=0
         
         if (len(target_waypoints)>1):
-            print("Length via_points",len(via_points))
-            print("Length target_waypoints",len(target_waypoints))
-            print("Length coordinates",len(coordinates_trajectory))
-            input("done?")
             for a in range(len(coordinates_trajectory)):
                 if(b<(len(via_points)-1)):
                     if (np.linalg.norm(coordinates_trajectory[a]-via_points[b+1])<0.01):
@@ -177,7 +175,8 @@ class Controller:
         error_xyz = base_trajectory_cubic[base_waypoint][:2] - current_xyz[:2]
     
         Derivative_error=self.Kd*(error_xyz - self.e_prev_base)/(base_waypoint+1 - self.time_prev_base)
-        desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
+        self.integral = self.integral + self.Ki*error_xyz*(base_waypoint+1 - self.time_prev_base)
+        desired_velocity_xyz = self.Kp*error_xyz + Derivative_error + self.integral
         action_to_send = desired_velocity_xyz
 
         self.e_prev_base = error_xyz
@@ -186,11 +185,11 @@ class Controller:
         if(base_target_waypoints[self.base_current_target_waypoint]>base_waypoint):
             base_waypoint+=1 
         elif((self.base_current_target_waypoint<(len(base_target_trajectory)-1) ) and 
-                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint][:2]-current_xyz[:2])<0.01)):
+                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint][:2]-current_xyz[:2])<0.05)):
             self.base_current_target_waypoint+=1
         
         elif((self.base_current_target_waypoint==(len(base_target_trajectory)-1)) and
-                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint][:2]-current_xyz[:2])<0.01)):
+                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint][:2]-current_xyz[:2])<0.05)):
             # If all waypoints have been reached stop the base and update the target reached variable
             action_to_send = [0,0,0]
             base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
@@ -330,6 +329,7 @@ class Controller:
         joint_velocities = self.pseudo_jacobian(J, desired_velocity)
 
         actions_to_send=joint_velocities
+        # Check if time of the waypoint corresponding the spline has been reached
         if(arm_target_waypoints[self.arm_current_target_waypoint]>arm_waypoint):
             arm_waypoint+=1 
         elif((self.arm_current_target_waypoint<len(arm_target_trajectory)-1 ) and 

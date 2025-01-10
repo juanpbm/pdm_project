@@ -69,15 +69,15 @@ class MotionPlannerNode(Node):
                 print("No salgo")
                 return
             # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.5, 0, 0.5]])
+            self.arm_trajectory = np.array([[0.3, 0.2, 0.7]])
         
         if(self.state_ == 3):
             # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.6, 0, 0.5]])
+            self.arm_trajectory = np.array([[0.3, 0.1, 0.5]])
 
         if(self.state_ == 4):
             # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.5, 0, 0.5]])
+            self.arm_trajectory = np.array([[0.3, 0.2, 0.7]])
 
         if(self.state_ == 5):
             self.base_trajectory = self.base_trajectory[::-1]

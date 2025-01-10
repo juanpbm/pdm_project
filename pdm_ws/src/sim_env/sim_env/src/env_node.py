@@ -43,10 +43,12 @@ class PandaEnvNode(Node):
     def goal_reached_callback(self, msg):
         self.get_logger().info('Goal reached')
         # Set the new value of the state
-        if(self.state_.data < 3 and self.state_.data > 0):
+        print(self.state_.data)
+        input("Done?")
+        if(self.state_.data < 6 and self.state_.data > 0):
             self.state_.data += 1
             self.state_publisher_.publish(self.state_)
-        elif(self.state_ == 3):
+        elif(self.state_ == 6):
             self.state_.data = 1
 
     def pub_map(self):

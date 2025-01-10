@@ -66,6 +66,7 @@ class ControlNode(Node):
 
         # Only update trajectory if the new one is different
         if not np.array_equal(new_trajectory, self.base_trajectory):
+            print(self.state_)
             self.base_trajectory = new_trajectory
             # Reset progress variables
             self.base_waypoint = 0
@@ -162,20 +163,26 @@ def main(args=None):
         rclpy.init(args=args)
         control_node = ControlNode()
         # control_node.run_mobile_reacher()
+        last_state=0
         while (rclpy.ok()):
             rclpy.spin_once(control_node)
             
             # Only start calculations once all the information is available
-            if (control_node.ready_for_base() and control_node.state_ in {2, 5}):
+            if (control_node.ready_for_base() and control_node.state_ in {2, 5} and control_node.state_ != last_state):
                 while(not control_node.base_target_reached): # Depending on state
                     control_node.move_base()
                     rclpy.spin_once(control_node)
+                last_state = control_node.state_
+                control_node.base_target_reached = False
                 control_node.pub_goal_reached()
+                
 
-            if (control_node.ready_for_arm() and control_node.state_ in {1, 3, 4, 6}): # Depending on state
+            if (control_node.ready_for_arm() and control_node.state_ in {1, 3, 4, 6} and control_node.state_ != last_state): # Depending on state
                 while (not control_node.arm_target_reached):
                     control_node.move_arm()
                     rclpy.spin_once(control_node)
+                last_state = control_node.state_
+                control_node.arm_target_reached = False
                 control_node.pub_goal_reached()
 
     except (KeyboardInterrupt, ExternalShutdownException):
