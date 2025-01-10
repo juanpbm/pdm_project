@@ -152,9 +152,10 @@ class Controller:
         
         if (len(target_waypoints)>1):
             for a in range(len(coordinates_trajectory)):
-                if (np.linalg.norm(coordinates_trajectory[a]-via_points[b+1])<0.01):
-                    target_waypoints[b]=a
-                    b+=1
+                if(b<(len(via_points)-1)):
+                    if (np.linalg.norm(coordinates_trajectory[a]-via_points[b+1])<0.01):
+                        target_waypoints[b]=a
+                        b+=1
             target_waypoints=np.array(target_waypoints)
         else: 
             target_waypoints=np.array([len(coordinates_trajectory)-1])
@@ -328,10 +329,14 @@ class Controller:
         if(arm_target_waypoints[self.arm_current_target_waypoint]>arm_waypoint):
             arm_waypoint+=1 
         elif((self.arm_current_target_waypoint<len(arm_target_trajectory)-1 ) and 
-                (np.linalg.norm(arm_target_trajectory[self.arm_current_target_waypoint]-current_arm_joint_pos)<0.01)):
+                ((arm_target_trajectory[self.arm_current_target_waypoint][0]-current_arm_joint_pos[0])<0.03) and
+                ((arm_target_trajectory[self.arm_current_target_waypoint][1]-current_arm_joint_pos[1])<0.03) and
+                ((arm_target_trajectory[self.arm_current_target_waypoint][2]-current_arm_joint_pos[2])<0.03) ):
             self.arm_current_target_waypoint+=1
         elif((self.arm_current_target_waypoint==len(arm_target_trajectory)-1 ) and 
-                (np.linalg.norm(arm_target_trajectory[self.arm_current_target_waypoint]-current_arm_joint_pos)<0.01)):
+               ((arm_target_trajectory[self.arm_current_target_waypoint][0]-current_arm_joint_pos[0])<0.03) and
+                ((arm_target_trajectory[self.arm_current_target_waypoint][1]-current_arm_joint_pos[1])<0.03) and
+                ((arm_target_trajectory[self.arm_current_target_waypoint][2]-current_arm_joint_pos[2])<0.03) ):
             actions_to_send = np.zeros(self.n_actions)
             arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue    
             
