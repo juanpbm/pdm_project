@@ -17,7 +17,6 @@ class MotionPlannerNode(Node):
             self.map_callback,
             10)
 
-        # TODO: what other information or topics are needed?
         self.map = None
         self.base_trajectory = np.empty(0)
         self.arm_trajectory = np.empty(0)

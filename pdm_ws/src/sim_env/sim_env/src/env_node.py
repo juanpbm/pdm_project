@@ -21,7 +21,6 @@ class PandaEnvNode(Node):
             10)
         
         self.panda_sym = Panda_Sym(render=True)
-        # TODO: what other information or topics are needed?
         self.get_logger().info("panda env Node has been created.")
 
 
@@ -77,8 +76,6 @@ class PandaEnvNode(Node):
         # Publish cmd_vel msg
         self.arm_pos_publisher_.publish(msg)
         self.get_logger().info('Publishing arm pos from panda_env Node: "%s"' % msg.data)
-
-    #Functions that use the env class
     
 def main(args=None):
     # start the panda_env node
