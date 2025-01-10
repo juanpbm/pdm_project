@@ -42,8 +42,6 @@ class PandaEnvNode(Node):
     def goal_reached_callback(self, msg):
         self.get_logger().info('Goal reached')
         # Set the new value of the state
-        # print(self.state_.data)
-        # input("Done?")
         if(self.state_.data < 6 and self.state_.data > 0):
             self.state_.data += 1
             self.state_publisher_.publish(self.state_)
@@ -73,7 +71,6 @@ class PandaEnvNode(Node):
         if(self.state_.data == 0):
             self.state_.data = 1
             self.state_publisher_.publish(self.state_)
-            print("SEEEEEEEEEEEEEEEEENT")
 
     def pub_base_pos(self):
         # Get the current position of the robot

@@ -62,7 +62,6 @@ class ControlNode(Node):
 
         # Only update trajectory if the new one is different
         if not np.array_equal(new_trajectory, self.base_trajectory):
-            print(self.state_)
             self.base_trajectory = new_trajectory
             # Reset progress variables
             self.base_waypoint = 0

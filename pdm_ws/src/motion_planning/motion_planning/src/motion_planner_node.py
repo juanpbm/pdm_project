@@ -43,16 +43,13 @@ class MotionPlannerNode(Node):
             self.map = np.array(msg.data).reshape(shape)
 
             self.base_trajectory = self.map_rrt()
-            print(self.base_trajectory)
+            self.get_logger().info('generated base_trajectory:"%s"' % self.base_trajectory)
 
     # Get the new environment from the environment
     def new_state_callback(self, msg):
         self.state_ = msg.data
-        print(self.state_)
-        print(self.base_trajectory)
         if(self.state_ == 1):
             while(self.base_trajectory == np.empty(0)):
-                print("No salgo")
                 return
             # Dummy trajectory. The computed trajectory should return something similar
             self.arm_trajectory = np.array([[0.3, 0.2, 0.7]])
@@ -73,8 +70,6 @@ class MotionPlannerNode(Node):
             self.arm_trajectory = np.array([[0.6, 0, 0.5]])
             
             # Create array message with the base trajectory information
-        print("Si salgo")
-        print(self.base_trajectory)
         base_msg = Float64MultiArray()
         base_msg.data = self.base_trajectory.flatten().tolist()
         assert all(isinstance(val, float) for val in base_msg.data) # All elements must be floats
