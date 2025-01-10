@@ -162,7 +162,7 @@ class Controller:
         return coordinates_trajectory, target_waypoints
 
 
-    def run_panda_base(self, current_xyz, base_trajectory_cubic, base_target_trajectory, base_target_waypoints, base_waypoint, base_target_reached):
+    def run_panda_base(self, current_xyz, base_trajectory_cubic, base_target_trajectory, base_target_waypoints, base_waypoint, base_target_reached, arm_current_pos, arm_target_position):
 
         action = np.zeros(self.n_actions, dtype=float)
         
@@ -179,6 +179,40 @@ class Controller:
         self.e_prev_base = error_xyz
         self.time_prev_base = base_waypoint
 
+        ####################### ARM ##################################
+        current_arm_joint_pos, current_orientation = self.compute_forward_kinematics(self.joints_list, arm_current_pos)
+        
+        target_orientation =np.array([ 3.14, -0.37,  0.  ]) # Euler Angles TODO: where would this come from. 
+
+            
+        error_xyz = arm_target_position - current_arm_joint_pos[:3]    
+      
+        # Derivative_error=self.Kd*(error_xyz - self.e_prev_arm)/(arm_waypoint+1 - self.time_prev_arm)
+        desired_velocity_xyz = self.Kp*error_xyz 
+
+        
+
+        # self.e_prev_arm = error_xyz
+        # self.time_prev_arm = arm_waypoint
+    
+
+        # Orientation error 
+        current_orientation_matrix = self.euler_to_matrix(current_orientation) 
+        target_orientation_matrix = self.euler_to_matrix(target_orientation) 
+        
+        orientation_error=self.calc_rot_error(target_orientation_matrix, current_orientation_matrix)
+        desired_velocity_orientation = self.Kp * orientation_error
+        
+        if np.linalg.norm(desired_velocity_xyz) > self.arm_max_vel:
+            desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * self.arm_max_vel
+
+        desired_velocity = np.hstack((desired_velocity_xyz, desired_velocity_orientation)) 
+        
+        J= self.compute_jacobian(self.joints_list, arm_current_pos, current_arm_joint_pos)
+        joint_velocities = self.pseudo_jacobian(J, desired_velocity)
+
+        actions_to_send_arm=joint_velocities
+        ####################### ARM ##################################
         if(base_target_waypoints[self.base_current_target_waypoint]>base_waypoint):
             base_waypoint+=1 
         elif((self.base_current_target_waypoint<(len(base_target_trajectory)-1) ) and 
@@ -195,6 +229,9 @@ class Controller:
                 if action_to_send[i] > self.base_max_vel:
                     action_to_send[i] = self.base_max_vel
         action[:3] = action_to_send
+        for i in range(len(self.joints_list)-2):      
+                action[i + 3] = actions_to_send_arm[i]
+
         return action, base_target_reached, base_waypoint
     
     def revolute_transform(self, axis, angle):
@@ -281,9 +318,9 @@ class Controller:
         yaw = np.arctan2(matrix[1, 0], matrix[0, 0]) 
         return np.array([roll, pitch, yaw])
 
-    def pseudo_jacobian(self, J, desired_velocity, damping_factor=0.1): 
+    def pseudo_jacobian(self, J, desired_velocity, damping_factor=0.01): 
         JJT = J @ J.T 
-        damping_matrix = damping_factor**2 * np.eye(JJT.shape[0]) 
+        damping_matrix = damping_factor * np.eye(JJT.shape[0]) 
         pseudo_inverse = J.T @ np.linalg.inv(JJT + damping_matrix) 
 
         return pseudo_inverse @ desired_velocity
@@ -294,7 +331,7 @@ class Controller:
         # Get current position and trajectory
         current_arm_joint_pos, current_orientation = self.compute_forward_kinematics(self.joints_list, arm_current_pos)
         
-        target_orientation = np.array([1, 0, 0]) # Euler Angles TODO: where would this come from. 
+        target_orientation =np.array([ 3.14, -0.37,  0.  ]) # Euler Angles TODO: where would this come from. 
         actions_to_send = np.zeros(self.n_actions)
 
             
@@ -302,7 +339,7 @@ class Controller:
       
         Derivative_error=self.Kd*(error_xyz - self.e_prev_arm)/(arm_waypoint+1 - self.time_prev_arm)
         desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
-        actions_to_send = desired_velocity_xyz
+        # actions_to_send = desired_velocity_xyz
 
         
 
@@ -329,14 +366,14 @@ class Controller:
         if(arm_target_waypoints[self.arm_current_target_waypoint]>arm_waypoint):
             arm_waypoint+=1 
         elif((self.arm_current_target_waypoint<len(arm_target_trajectory)-1 ) and 
-                ((arm_target_trajectory[self.arm_current_target_waypoint][0]-current_arm_joint_pos[0])<0.03) and
-                ((arm_target_trajectory[self.arm_current_target_waypoint][1]-current_arm_joint_pos[1])<0.03) and
-                ((arm_target_trajectory[self.arm_current_target_waypoint][2]-current_arm_joint_pos[2])<0.03) ):
+                (abs(arm_target_trajectory[self.arm_current_target_waypoint][0]-current_arm_joint_pos[0])<0.03) and
+                (abs(arm_target_trajectory[self.arm_current_target_waypoint][1]-current_arm_joint_pos[1])<0.03) and
+                (abs(arm_target_trajectory[self.arm_current_target_waypoint][2]-current_arm_joint_pos[2])<0.03) ):
             self.arm_current_target_waypoint+=1
         elif((self.arm_current_target_waypoint==len(arm_target_trajectory)-1 ) and 
-               ((arm_target_trajectory[self.arm_current_target_waypoint][0]-current_arm_joint_pos[0])<0.03) and
-                ((arm_target_trajectory[self.arm_current_target_waypoint][1]-current_arm_joint_pos[1])<0.03) and
-                ((arm_target_trajectory[self.arm_current_target_waypoint][2]-current_arm_joint_pos[2])<0.03) ):
+               (abs(arm_target_trajectory[self.arm_current_target_waypoint][0]-current_arm_joint_pos[0])<0.03) and
+                (abs(arm_target_trajectory[self.arm_current_target_waypoint][1]-current_arm_joint_pos[1])<0.03) and
+                (abs(arm_target_trajectory[self.arm_current_target_waypoint][2]-current_arm_joint_pos[2])<0.03) ):
             actions_to_send = np.zeros(self.n_actions)
             arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue    
             

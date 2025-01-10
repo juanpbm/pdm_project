@@ -40,6 +40,7 @@ class ControlNode(Node):
         self.arm_target_reached = False
         self.base_waypoint = 0
         self.arm_waypoint = 0
+        self.arm_target_pos = np.array([0.3, 0.5, 0.5])
         self.controller = Controller()
 
         
@@ -109,7 +110,7 @@ class ControlNode(Node):
 
     def move_base(self):
         
-        action, self.base_target_reached, self.base_waypoint = self.controller.run_panda_base(self.base_current_pos, self.base_trajectory_cubic,self.base_trajectory, self.base_target_waypoints, self.base_waypoint, self.base_target_reached)
+        action, self.base_target_reached, self.base_waypoint = self.controller.run_panda_base(self.base_current_pos, self.base_trajectory_cubic,self.base_trajectory, self.base_target_waypoints, self.base_waypoint, self.base_target_reached, self.arm_current_pos, self.arm_target_pos)
 
         # Construct the cmd_vel msg for the base
         msg = Float64MultiArray()
