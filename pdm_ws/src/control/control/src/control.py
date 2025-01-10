@@ -151,10 +151,15 @@ class Controller:
         b=0
         
         if (len(target_waypoints)>1):
+            print("Length via_points",len(via_points))
+            print("Length target_waypoints",len(target_waypoints))
+            print("Length coordinates",len(coordinates_trajectory))
+            input("done?")
             for a in range(len(coordinates_trajectory)):
-                if (np.linalg.norm(coordinates_trajectory[a]-via_points[b+1])<0.01):
-                    target_waypoints[b]=a
-                    b+=1
+                if(b<(len(via_points)-1)):
+                    if (np.linalg.norm(coordinates_trajectory[a]-via_points[b+1])<0.01):
+                        target_waypoints[b]=a
+                        b+=1
             target_waypoints=np.array(target_waypoints)
         else: 
             target_waypoints=np.array([len(coordinates_trajectory)-1])

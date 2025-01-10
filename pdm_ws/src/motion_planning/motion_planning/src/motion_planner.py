@@ -24,7 +24,7 @@ class Conex:
 
 class RRT:
     def __init__(self):
-        self.N = 2000                                                                                      # Maximum number of iterations
+        self.N = 1200                                                                                      # Maximum number of iterations
         self.gamma = 400                                                                                  # Gamma value for the algorithm
         self.d = 2                                                                                          # d value for the algorithm
 
@@ -86,7 +86,7 @@ class RRT:
         return True
     
     # Update the costs of the different nodes when updating the position of one of the nodes of the graph
-    def update_costs(self,node, V_E, img,i=0):
+    def update_costs(self,node, V_E):
         stack = [node]                                                                                              # Initialize a stack and a visited set
         visited = set()                                                                                             # Set to track visited nodes
 
@@ -192,7 +192,7 @@ class RRT:
                                     V_E[n.id].cost = cost + self.EuclideanDistance(new_node.child, n.child)
 
                                     # Update the costs of the child nodes of the update node
-                                    self.update_costs(n, V_E, img)
+                                    self.update_costs(n, V_E)
 
                         else:
                             ok = False

@@ -6,21 +6,29 @@ import warnings
 import gymnasium as gym
 import numpy as np
 from geometry_msgs.msg import Point
-from std_msgs.msg import Float64MultiArray, MultiArrayDimension
+from std_msgs.msg import Float64MultiArray, MultiArrayDimension, Int32, Bool
 
 class PandaEnvNode(Node):
     def __init__(self):
         super().__init__('panda_env')
+        self.state_publisher_ = self.create_publisher(Int32, 'new_state', 10)
         self.map_publisher_ = self.create_publisher(Float64MultiArray, 'map', 10)
         self.base_pos_publisher_ = self.create_publisher(Point, 'base_pos', 10)
         self.arm_pos_publisher_ = self.create_publisher(Float64MultiArray, 'arm_pos', 10)
-        self.cmd_vel_subscription = self.create_subscription(
+        self.cmd_vel_subscription_ = self.create_subscription(
             Float64MultiArray,
             'cmd_vel',
             self.cmd_callback,
             10)
+        self.new_state_reached_subscription_ = self.create_subscription(
+            Bool,
+            'goal_reached',
+            self.goal_reached_callback,
+            10)
         
         self.panda_sym = Panda_Sym(render=True)
+        self.state_ = Int32()
+        self.state_.data = 0
         # TODO: what other information or topics are needed?
         print("panda env Node has been created.")
 
@@ -32,6 +40,14 @@ class PandaEnvNode(Node):
         # Call the function that moves the robot with the received action command
         self.panda_sym.move_panda(action)
 
+    def goal_reached_callback(self, msg):
+        self.get_logger().info('Goal reached')
+        # Set the new value of the state
+        if(self.state_.data < 3 and self.state_.data > 0):
+            self.state_.data += 1
+            self.state_publisher_.publish(self.state_)
+        elif(self.state_ == 3):
+            self.state_.data = 1
 
     def pub_map(self):
         ob = self.panda_sym.Get_Ob()
@@ -52,6 +68,11 @@ class PandaEnvNode(Node):
         # Publish base Trajectory 
         self.map_publisher_.publish(map_msg)
         self.get_logger().info('Published occupancy map')
+        # Publish state 1
+        if(self.state_.data == 0):
+            self.state_.data = 1
+            self.state_publisher_.publish(self.state_)
+            print("SEEEEEEEEEEEEEEEEENT")
 
     def pub_base_pos(self):
         # Get the current position of the robot
