@@ -160,8 +160,11 @@ class MotionPlannerNode(Node):
             p2 = V_E_shortest_smoothed[i + 1].child
             if(i == 0):
                 message.append([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0])
-
-            message.append([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0])
+            points=np.linspace(np.array([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0]),np.array([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0]),num=10)
+            input(points)
+            message.extend([point.tolist() for point in points[1:-1]])
+            # message.append([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0])
+                
             j = j-1
 
             img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  # Smoothed path in yellow
@@ -170,7 +173,9 @@ class MotionPlannerNode(Node):
         cv.imshow("Binary Image", img_print)
         cv.waitKey(0)
         cv.destroyAllWindows()
-        return np.array(message)
+        # print(message)
+        input(np.array(message, dtype=float))
+        return np.array(message, dtype=float)
     
 def main(args=None):
     # start the motion planning node

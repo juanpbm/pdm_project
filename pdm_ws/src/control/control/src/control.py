@@ -164,7 +164,7 @@ class Controller:
         return coordinates_trajectory, target_waypoints
 
 
-    def run_panda_base(self, current_xyz, base_trajectory_cubic, base_target_trajectory, base_target_waypoints, base_waypoint, base_target_reached):
+    def run_panda_base(self, current_xyz, base_trajectory_cubic, base_target_trajectory, base_target_waypoints, base_waypoint, base_target_reached, arm_current_pos, arm_target_position):
 
         action = np.zeros(self.n_actions, dtype=float)
         
@@ -181,6 +181,40 @@ class Controller:
 
         self.e_prev_base = error_xyz
         self.time_prev_base = base_waypoint
+        ####################### ARM ##################################
+        current_arm_joint_pos, current_orientation = self.compute_forward_kinematics(self.joints_list, arm_current_pos)
+        
+        target_orientation =np.array([ 3.14, -0.37,  0.  ]) # Euler Angles TODO: where would this come from. 
+
+            
+        error_xyz = arm_target_position - current_arm_joint_pos[:3]    
+      
+        # Derivative_error=self.Kd*(error_xyz - self.e_prev_arm)/(arm_waypoint+1 - self.time_prev_arm)
+        desired_velocity_xyz = self.Kp*error_xyz 
+
+        
+
+        # self.e_prev_arm = error_xyz
+        # self.time_prev_arm = arm_waypoint
+    
+
+        # Orientation error 
+        current_orientation_matrix = self.euler_to_matrix(current_orientation) 
+        target_orientation_matrix = self.euler_to_matrix(target_orientation) 
+        
+        orientation_error=self.calc_rot_error(target_orientation_matrix, current_orientation_matrix)
+        desired_velocity_orientation = self.Kp * orientation_error
+        
+        if np.linalg.norm(desired_velocity_xyz) > self.arm_max_vel:
+            desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * self.arm_max_vel
+
+        desired_velocity = np.hstack((desired_velocity_xyz, desired_velocity_orientation)) 
+        
+        J= self.compute_jacobian(self.joints_list, arm_current_pos, current_arm_joint_pos)
+        joint_velocities = self.pseudo_jacobian(J, desired_velocity)
+
+        actions_to_send_arm=joint_velocities
+        ####################### ARM ##################################
 
         if(base_target_waypoints[self.base_current_target_waypoint]>base_waypoint):
             base_waypoint+=1 
@@ -198,6 +232,8 @@ class Controller:
                 if action_to_send[i] > self.base_max_vel:
                     action_to_send[i] = self.base_max_vel
         action[:2] = action_to_send[:2]
+        for i in range(len(self.joints_list)-2):      
+                action[i + 3] = actions_to_send_arm[i]
         return action, base_target_reached, base_waypoint
     
     def revolute_transform(self, axis, angle):
