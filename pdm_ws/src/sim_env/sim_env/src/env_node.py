@@ -36,7 +36,6 @@ class PandaEnvNode(Node):
     def pub_map(self):
         ob = self.panda_sym.Get_Ob()
         occupancy_map = np.array(ob['robot_0']['Occupancy'], dtype=np.float64)
-        print(occupancy_map.shape)
         # Create array message with the base trajectory information
 
         map_msg = Float64MultiArray()
@@ -61,9 +60,9 @@ class PandaEnvNode(Node):
         
         # Create Point msg
         msg = Point()
-        msg.x = current_xyz[0]
-        msg.y = current_xyz[1]
-        msg.z = current_xyz[2]
+        msg.x = current_xyz[0] + self.panda_sym.init_pos[0]
+        msg.y = current_xyz[1] + self.panda_sym.init_pos[1]
+        msg.z = current_xyz[2] + self.panda_sym.init_pos[2]
 
         # Publish current position
         self.base_pos_publisher_.publish(msg)

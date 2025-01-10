@@ -42,17 +42,16 @@ class Panda_Sym:
         sensor = OccupancySensor(
             limits =  np.array([[0, 20], [0, -16], [0, 50/val]]),
             resolution = np.array([80, 64, 5], dtype=int),
-            interval=100,
-            plotting_interval=100,
+            interval=1000000,
+            plotting_interval=1000000,
         )
 
         self.env.add_sensor(sensor, [0])
         # Set spaces AFTER all components have been added.
         self.env.set_spaces()
         defaultAction = np.array([1.0,-1.0,0.0])
-        vel0 = np.array([0.0, 0.0, 0.0])
+        
         initial_observations = []
-        self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=vel0)
         initial_observations.append(self.ob)
         self.env.add_debug_shape(
             (0.2, -0.3, 0.0),
@@ -93,7 +92,9 @@ class Panda_Sym:
         if(self.map_number > 2):
             self.env.add_obstacle(self.shelf5)
             self.env.add_obstacle(self.shelf6)
-        self.ob = self.env.reset(mount_positions=np.array([self.init_pos]))
+
+        self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=np.array([0.0, 0.0, 0.0]))
+
 
     def Get_Map_Info(self):
 
@@ -147,6 +148,7 @@ class Panda_Sym:
     
     def Get_Ob(self):
         # Get Current position
+        self.ob = self.env._get_ob()
         return self.ob
 
     def move_panda(self, action):
