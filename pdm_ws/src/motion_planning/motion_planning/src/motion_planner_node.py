@@ -2,11 +2,16 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 import numpy as np
-from urdfenvs.robots.generic_urdf import GenericUrdfReacher
-from urdfenvs.urdf_common.urdf_env import UrdfEnv
+from std_msgs.msg import Float64MultiArray, MultiArrayDimension, String
+import cv2 as cv
+from motion_planning.src.motion_planner import RRT
+
+from ament_index_python.packages import get_package_share_directory
+import os
+
+import matplotlib.pyplot as plt
 
 from std_msgs.msg import Float64MultiArray, MultiArrayDimension
-from std_msgs.msg import String
 
 class MotionPlannerNode(Node):
     def __init__(self):
@@ -14,30 +19,49 @@ class MotionPlannerNode(Node):
         self.base_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'base_trajectory', 10)
         self.arm_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'arm_trajectory', 10)
         self.subscription = self.create_subscription(
-            String,
+            Float64MultiArray,
             'map',
             self.map_callback,
             10)
 
         # TODO: what other information or topics are needed?
+        self.map = None
+        self.base_trajectory = np.empty(0)
+        self.arm_trajectory = np.empty(0)
         print("motion_planner Node has been created.")
 
     def map_callback(self, msg):
-        self.get_logger().info('Got in Motion Planning Node sub: "%s"' % msg.data)
+        self.get_logger().info('Got Map in Motion Planning Node sub')
 
-        # TODO: compute trajectory
+        if (self.map is None):
+            dims = msg.layout.dim
+            if len(dims) == 0:
+                self.get_logger().error('Received an array with no dimensions.')
+                return
+            shape = tuple(dim.size for dim in dims)
+            self.map = np.array(msg.data).reshape(shape)
+
+            slice_index = 1
+            slice_data = self.map[:,:,slice_index]
+
+            plt.imshow(slice_data, cmap="gray", origin="lower")
+            plt.title(f"Occupancy map")
+            plt.show()
+
+            self.base_trajectory = self.map_rrt()
 
         # Dummy trajectory. The computed trajectory should return something similar
-        base_trajectory = np.array([[1, 1, 0], [2, 2, 0], [1, 2, 0], [0, 0, 0]], dtype=float) 
-        arm_trajectory = np.array([[0.6, 0, 0.5]])
+        self.arm_trajectory = np.array([[0.6, 0, 0.5]])
+        self.pub_trajectories()
 
+    def pub_trajectories(self):
         # Create array message with the base trajectory information
         base_msg = Float64MultiArray()
-        base_msg.data = base_trajectory.flatten().tolist()
+        base_msg.data = self.base_trajectory.flatten().tolist()
         assert all(isinstance(val, float) for val in base_msg.data) # All elements must be floats
         # Define dimensions of the msg to reconstruct by the subscribers
-        base_msg.layout.dim.append(MultiArrayDimension(label='rows', size=base_trajectory.shape[0], stride=base_trajectory.shape[1] * base_trajectory.shape[0]))
-        base_msg.layout.dim.append(MultiArrayDimension(label='cols', size=base_trajectory.shape[1], stride=base_trajectory.shape[1]))
+        base_msg.layout.dim.append(MultiArrayDimension(label='rows', size=self.base_trajectory.shape[0], stride=self.base_trajectory.shape[1] * self.base_trajectory.shape[0]))
+        base_msg.layout.dim.append(MultiArrayDimension(label='cols', size=self.base_trajectory.shape[1], stride=self.base_trajectory.shape[1]))
 
         # Publish base Trajectory 
         self.base_trajectory_publisher_.publish(base_msg)
@@ -45,11 +69,11 @@ class MotionPlannerNode(Node):
 
         # Create array message with the arm trajectory information
         arm_msg = Float64MultiArray()
-        arm_msg.data = arm_trajectory.flatten().tolist()
+        arm_msg.data = self.arm_trajectory.flatten().tolist()
         assert all(isinstance(val, float) for val in arm_msg.data) # All elements must be floats
         # Define dimensions of the msg to reconstruct by the subscribers
-        arm_msg.layout.dim.append(MultiArrayDimension(label='rows', size=arm_trajectory.shape[0], stride=arm_trajectory.shape[1] * arm_trajectory.shape[0]))
-        arm_msg.layout.dim.append(MultiArrayDimension(label='cols', size=arm_trajectory.shape[1], stride=arm_trajectory.shape[1]))
+        arm_msg.layout.dim.append(MultiArrayDimension(label='rows', size=self.arm_trajectory.shape[0], stride=self.arm_trajectory.shape[1] * self.arm_trajectory.shape[0]))
+        arm_msg.layout.dim.append(MultiArrayDimension(label='cols', size=self.arm_trajectory.shape[1], stride=self.arm_trajectory.shape[1]))
 
         # Publish arm trajectory
         self.arm_trajectory_publisher_.publish(arm_msg)
@@ -58,6 +82,86 @@ class MotionPlannerNode(Node):
 
     #Functions that use the motion planning class to compute the RRT
 
+    def map_rrt(self):
+        image_array = self.map
+        rrt = RRT()
+
+        # Ensure the data type is uint8
+        if image_array.dtype != np.uint8:
+            img = (image_array * 255).astype(np.uint8)
+        else:
+            img = image_array.copy()
+
+        # Get only a slice of the occupancy grid (number 1)
+        slice_index = 1
+        img = img[:,:,slice_index]
+
+        # Flip, rotate and resize the image, and invert the colors, to adjust it to the requirements of the algorithm
+        img = cv.flip(img,1)
+        img = cv.rotate(img, cv.ROTATE_90_COUNTERCLOCKWISE)
+        img = 255 - img
+
+        img  = cv.resize(img, (200, 160), interpolation = cv.INTER_LINEAR)
+
+        # Apply a threshold to the image to ensure that there is only black and white colors (0 and 255 values)
+        ret,thresh = cv.threshold(img,254,255,0)
+
+        # Variables to make the algorithm work
+        size = img.shape
+        start = (140,40)
+        end = (20,160)
+        rad = 5
+        done = False
+
+        img_print = img.copy()
+        image = img.copy()
+
+        kernel = np.ones((6, 6), np.uint8) 
+    
+        # Using cv2.erode() method  
+        image = cv.erode(thresh, kernel, cv.BORDER_REFLECT)  
+
+        # Draw a circle of red color of thickness -1 px 
+        img_print = cv.circle(img_print, (start[1],start[0]), 3, (100,255,255), -1) 
+
+        # Draw a circle of red color of thickness -1 px 
+        img_print = cv.circle(img_print, (end[1],end[0]), rad, (255,0,0), 1) 
+
+        cv.imshow("Binary Image", image)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
+        [V_E, img_print, id] = rrt.RRT_star(np.squeeze(image), start, end,rad,size,img_print)
+        print("HAS BEEN FOUND: " + str(id))
+        V_E = np.asarray(V_E)
+        for i in V_E:
+            if(i.parent != (None,None)):
+                img_print = cv.line(img_print, (i.child[1],i.child[0]), (i.parent[1],i.parent[0]), (255,0,255), 1)
+
+
+        V_E_shortest = rrt.find_shortest([V_E[id]],V_E,V_E[id])
+
+        V_E_shortest_smoothed = rrt.smooth_path(V_E_shortest, np.squeeze(image))
+        message = []
+        # Draw the smoothed path
+        j = len(V_E_shortest_smoothed) - 1
+        for i in range(len(V_E_shortest_smoothed) - 1):
+            p1 = V_E_shortest_smoothed[i].child
+            p2 = V_E_shortest_smoothed[i + 1].child
+            if(i == 0):
+                message.append([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0])
+
+            message.append([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0])
+            j = j-1
+
+            img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  # Smoothed path in yellow
+
+        # print(message)
+        # Display the Binary Image
+        cv.imshow("Binary Image", img_print)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
+        return np.array(message)
+    
 def main(args=None):
     # start the motion planning node
     try:

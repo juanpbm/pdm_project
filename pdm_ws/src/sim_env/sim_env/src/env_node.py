@@ -5,14 +5,13 @@ from sim_env.src.robot_env import Panda_Sym
 import warnings
 import gymnasium as gym
 import numpy as np
-from std_msgs.msg import String
 from geometry_msgs.msg import Point
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, MultiArrayDimension
 
 class PandaEnvNode(Node):
     def __init__(self):
         super().__init__('panda_env')
-        self.map_publisher_ = self.create_publisher(String, 'map', 10)
+        self.map_publisher_ = self.create_publisher(Float64MultiArray, 'map', 10)
         self.base_pos_publisher_ = self.create_publisher(Point, 'base_pos', 10)
         self.arm_pos_publisher_ = self.create_publisher(Float64MultiArray, 'arm_pos', 10)
         self.cmd_vel_subscription = self.create_subscription(
@@ -27,7 +26,7 @@ class PandaEnvNode(Node):
 
 
     def cmd_callback(self, msg):
-        self.get_logger().info('Got in panda_env Node sub: "%s"' % msg.data)
+        self.get_logger().info('Got vel command in panda_env Node sub: "%s"' % msg.data)
         # Turn message into np array
         action = np.array(msg.data)
         # Call the function that moves the robot with the received action command
@@ -35,10 +34,24 @@ class PandaEnvNode(Node):
 
 
     def pub_map(self):
-        msg_new = String()
-        msg_new.data = 'map'
-        self.map_publisher_.publish(msg_new)
-        self.get_logger().info('Publishing from panda_env Node map: "%s"' % msg_new.data)
+        ob = self.panda_sym.Get_Ob()
+        occupancy_map = np.array(ob['robot_0']['Occupancy'], dtype=np.float64)
+        # Create array message with the base trajectory information
+
+        map_msg = Float64MultiArray()
+        map_msg.data = occupancy_map.flatten().tolist()
+        assert all(isinstance(val, float) for val in map_msg.data) # All elements must be floats
+        # Define dimensions of the msg to reconstruct by the subscribers
+        # Define dimensions based on the array's shape
+        stride = 1
+        map_msg.layout.dim = []
+        for i, size in reversed(list(enumerate(occupancy_map.shape))):
+            map_msg.layout.dim.insert(0, MultiArrayDimension(label=f'dim{i}', size=size, stride=stride))
+            stride *= size
+
+        # Publish base Trajectory 
+        self.map_publisher_.publish(map_msg)
+        self.get_logger().info('Published occupancy map')
 
     def pub_base_pos(self):
         # Get the current position of the robot
@@ -47,9 +60,9 @@ class PandaEnvNode(Node):
         
         # Create Point msg
         msg = Point()
-        msg.x = current_xyz[0]
-        msg.y = current_xyz[1]
-        msg.z = current_xyz[2]
+        msg.x = current_xyz[0] + self.panda_sym.init_pos[0]
+        msg.y = current_xyz[1] + self.panda_sym.init_pos[1]
+        msg.z = current_xyz[2] + self.panda_sym.init_pos[2]
 
         # Publish current position
         self.base_pos_publisher_.publish(msg)
@@ -57,7 +70,6 @@ class PandaEnvNode(Node):
     
     def pub_arm_pos(self):
         ob = self.panda_sym.Get_Ob()
-        print(ob)
         current_joint_pos = np.round(ob['robot_0']['joint_state']['position'][3:-2],4)
         msg = Float64MultiArray()
         msg.data = current_joint_pos.astype(np.float64).tolist()
