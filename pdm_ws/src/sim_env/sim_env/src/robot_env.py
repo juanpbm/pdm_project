@@ -74,6 +74,7 @@ class Panda_Sym:
         self.Gen_Rooms()
         self.Gen_Room_Obstacles()
         self.Gen_Shelf()
+        self.Gen_Goals()
         self.env = UrdfEnv(dt=0.01, robots=self.panda_robot, render=self.render, num_sub_steps=200,)
         self.env.reconfigure_camera(25.0, 0.0, -35.01, (10, 0, 0))
 
@@ -92,7 +93,9 @@ class Panda_Sym:
         if(self.map_number > 2):
             self.env.add_obstacle(self.shelf5)
             self.env.add_obstacle(self.shelf6)
-            
+
+        self.env.add_obstacle(self.base_goal)
+        self.env.add_obstacle(self.arm_goal)
         self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=np.array([0.0, 0.0, 0.0]))
 
 
@@ -109,6 +112,7 @@ class Panda_Sym:
         self.red_room_dicts = map_data.get('red_room_dicts', [])
         self.obstacles = map_data.get('obstacles', [])
         self.shelves = map_data.get('shelves', [])
+        self.goals = map_data.get('goals', [])
 
     def Gen_Panda(self):
         self.panda_robot = [
@@ -145,11 +149,24 @@ class Panda_Sym:
             self.shelf5 = BoxObstacle(name='obstacle1', content_dict=(self.shelves[4]))
             
             self.shelf6 = BoxObstacle(name='obstacle1', content_dict=(self.shelves[5]))
+
+    def Gen_Goals(self):
+    
+        self.base_goal = BoxObstacle(name='obstacle1', content_dict=(self.goals[0]))
+        
+        self.arm_goal = BoxObstacle(name='obstacle1', content_dict=(self.goals[1]))
+        self.goal_pos = self.goals[0]['geometry']['position']
     
     def Get_Ob(self):
         # Get Current position
         self.ob = self.env._get_ob()
         return self.ob
+
+    def Get_Goal_Pos(self):
+        return self.goal_pos
+
+    def Get_Init_Pos(self):
+        return self.init_pos
 
     def move_panda(self, action):
         # Move Robot
