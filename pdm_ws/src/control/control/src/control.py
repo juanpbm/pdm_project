@@ -185,7 +185,7 @@ class Controller:
         if(base_target_waypoints[self.base_current_target_waypoint]>base_waypoint):
             base_waypoint+=1 
         elif((self.base_current_target_waypoint<(len(base_target_trajectory)-1) ) and 
-                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint][:2]-current_xyz[:2])<0.05)):
+                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint][:2]-current_xyz[:2])<0.08)):
             self.base_current_target_waypoint+=1
         
         elif((self.base_current_target_waypoint==(len(base_target_trajectory)-1)) and
@@ -197,7 +197,9 @@ class Controller:
         for i in range(len(action_to_send)):
                 if action_to_send[i] > self.base_max_vel:
                     action_to_send[i] = self.base_max_vel
+                
         action[:2] = action_to_send[:2]
+      
         return action, base_target_reached, base_waypoint
     
     def revolute_transform(self, axis, angle):

@@ -8,7 +8,8 @@ from urdfenvs.sensors.occupancy_sensor import OccupancySensor
 import json
 import os
 from ament_index_python.packages import get_package_share_directory
-import warnings
+import pybullet as p
+import pybullet_data
 
 
 class Panda_Sym:
@@ -96,7 +97,20 @@ class Panda_Sym:
 
         self.env.add_obstacle(self.base_goal)
         self.env.add_obstacle(self.arm_goal)
-        self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=np.array([0.0, 0.0, 0.0]))
+        self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=np.array([0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]))
+        p.connect(p.DIRECT)
+        # Set the search path for PyBullet data (optional, for other assets)
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+
+        # Create a collision shape for the plane
+        plane_shape = p.createCollisionShape(shapeType=p.GEOM_PLANE,halfExtents=[50, 50, 1])
+
+        # Create a plane with the collision shape
+        ground_id = p.createMultiBody(baseMass=0,baseCollisionShapeIndex=plane_shape,basePosition=[0, 0, 0.01])
+
+        # Change the visual appearance of the ground to white
+        p.changeVisualShape(ground_id, -1, rgbaColor=[1, 1, 1, 1])  # RGBA: White color
+       
 
 
     def Get_Map_Info(self):
@@ -171,3 +185,9 @@ class Panda_Sym:
     def move_panda(self, action):
         # Move Robot
         self.ob, *_ = self.env.step(action)
+
+    def reset_robot_arm(self):
+        self.init_pos = (self.init_pos+np.round(self.ob['robot_0']['joint_state']['position'][:3],4)).astype(float)
+        init_vel = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
+        init_arm_pos = np.array([0,0,0,0,0,0,-1.5,0,2.0,0,0,0])
+        self.ob, _ = self.env.reset( mount_positions=np.array([self.init_pos]), pos=init_arm_pos,vel=init_vel)
