@@ -42,6 +42,7 @@ class MotionPlannerNode(Node):
         self.arm_trajectory = np.empty(0)
         self.base_goal = np.empty(0)
         self.init_pos = np.empty(0)
+        self.safe_arm_pos = np.array([0.3, 0.2, 0.7])
         self.get_logger().info("motion_planner Node has been created.")
 
     def map_callback(self, msg):
@@ -64,34 +65,35 @@ class MotionPlannerNode(Node):
         if(self.state_ == 1):
             while(self.base_trajectory == np.empty(0)):
                 return
-            # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.3, 0.2, 0.7]])
-        
-        if(self.state_ == 3):
-            # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.3, 0.1, 0.5]])
+            # safe position
+            self.arm_trajectory = self.safe_arm_pos
 
-        if(self.state_ == 4):
-            # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.3, 0.2, 0.7]])
+        elif(self.state_ == 2):
+            # same as in 1
+            self.arm_trajectory = self.safe_arm_pos
 
-        if(self.state_ == 5):
+        elif(self.state_ == 3):
+            # goal position
+            self.arm_trajectory = np.array(self.arm_goal)
+
+        elif(self.state_ == 4):
+            # safe position
+            self.arm_trajectory = self.safe_arm_pos
+
+        elif(self.state_ == 5):
             self.base_trajectory = self.base_trajectory[::-1]
+            self.arm_trajectory = self.safe_arm_pos
 
-        if(self.state_ == 6):
-            # Dummy trajectory. The computed trajectory should return something similar
+        elif(self.state_ == 6):
+            # drop position
             self.arm_trajectory = np.array([[0.6, 0, 0.5]])
-            
-            # Create array message with the base trajectory information
 
-        # Dummy trajectory. The computed trajectory should return something similar
-        self.arm_trajectory = np.array([[0.6, 0, 0.5]])
         self.pub_trajectories()
 
     def goal_callback(self, msg):
         self.get_logger().info('Got goal pos in motion planner:"%s"' % msg)
         self.arm_goal = np.array([msg.x, msg.y, msg.z], dtype=int)
-        self.base_goal = np.array([msg.x - 0.5, msg.y, msg.z], dtype=int)
+        self.base_goal = np.array([msg.x - 0.2, msg.y, 0], dtype=int)
     
     def init_callback(self, msg):
         self.get_logger().info('Got init pos in motion planner:"%s"' % msg)
