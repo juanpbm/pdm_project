@@ -54,7 +54,7 @@ class MotionPlannerNode(Node):
                 return
             shape = tuple(dim.size for dim in dims)
             self.map = np.array(msg.data).reshape(shape)
-
+        if(self.map_ready):
             self.base_trajectory = self.map_rrt()
             self.get_logger().info('generated base_trajectory:"%s"' % self.base_trajectory)
 
@@ -200,8 +200,10 @@ class MotionPlannerNode(Node):
         cv.waitKey(0)
         cv.destroyAllWindows()
         return np.array(message)
+    
     def map_ready(self):
-        return self.map is not None and self.base_goal.size != 0
+        # make sure that the map and positions are ready
+        return self.map is not None and self.base_goal.size != 0 and self.init_pos.size != 0
     
 def main(args=None):
     # start the motion planning node

@@ -77,7 +77,6 @@ class PandaEnvNode(Node):
     def pub_base_pos(self):
         # Get the current position of the robot
         ob = self.panda_sym.Get_Ob()
-        print(ob)
         current_xyz = np.round(ob['robot_0']['joint_state']['position'][:3],4)
         
         # Create Point msg
