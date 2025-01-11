@@ -42,7 +42,7 @@ class MotionPlannerNode(Node):
         self.arm_trajectory = np.empty(0)
         self.base_goal = np.empty(0)
         self.init_pos = np.empty(0)
-        self.safe_arm_pos = np.array([0.3, 0.2, 0.7])
+        self.safe_arm_pos = np.array([[0.3, 0, 0.3]])
         self.get_logger().info("motion_planner Node has been created.")
 
     def map_callback(self, msg):
@@ -86,7 +86,7 @@ class MotionPlannerNode(Node):
 
         elif(self.state_ == 6):
             # drop position
-            self.arm_trajectory = np.array([[0.6, 0, 0.5]])
+            self.arm_trajectory = np.array([[0.4, 0, 0.1]])
 
         self.pub_trajectories()
 
