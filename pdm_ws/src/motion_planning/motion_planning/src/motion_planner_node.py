@@ -73,9 +73,8 @@ class MotionPlannerNode(Node):
             self.arm_trajectory = np.array([[0.3, 0.1, 0.5]])
 
         if(self.state_ == 4):
-            # input("State 4")
             # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.2, 0.5, 0.7]])
+            self.arm_trajectory = np.array([[0.5, 0.5, 0.7]])
 
         if(self.state_ == 5):
             self.base_trajectory = self.base_trajectory[::-1]
@@ -86,8 +85,6 @@ class MotionPlannerNode(Node):
             
             # Create array message with the base trajectory information
 
-        # Dummy trajectory. The computed trajectory should return something similar
-        self.arm_trajectory = np.array([[0.6, 0, 0.5]])
         self.pub_trajectories()
 
     def goal_callback(self, msg):
@@ -202,10 +199,6 @@ class MotionPlannerNode(Node):
         cv.imshow("Binary Image", img_print)
         cv.waitKey(0)
         cv.destroyAllWindows()
-        # plt.imshow(img_print)
-        # plt.axis('off')
-        # plt.show(block=False)
-        # print(message)
        
         return np.array(message, dtype=float)
     

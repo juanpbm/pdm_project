@@ -160,7 +160,6 @@ def main(args=None):
     try:
         rclpy.init(args=args)
         control_node = ControlNode()
-        # control_node.run_mobile_reacher()
         last_state=0
         while (rclpy.ok()):
             rclpy.spin_once(control_node)
