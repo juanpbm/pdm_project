@@ -166,8 +166,8 @@ class MotionPlannerNode(Node):
         img_print = cv.circle(img_print, (end[1],end[0]), rad, (255,0,0), 1) 
 
         cv.imshow("Binary Image", image)
-        # cv.waitKey(0)
-        # cv.destroyAllWindows()
+        cv.waitKey(0)
+        cv.destroyAllWindows()
         [V_E, img_print, id] = rrt.RRT_star(np.squeeze(image), start, end,rad,size,img_print)
         print("HAS BEEN FOUND: " + str(id))
         V_E = np.asarray(V_E)
