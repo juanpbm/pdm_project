@@ -96,7 +96,9 @@ class Panda_Sym:
 
         self.env.add_obstacle(self.base_goal)
         self.env.add_obstacle(self.arm_goal)
-        self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=np.array([0.0, 0.0, 0.0]))
+        self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=np.array([0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]))
+        # input(self.ob)
+       
 
 
     def Get_Map_Info(self):
@@ -171,3 +173,9 @@ class Panda_Sym:
     def move_panda(self, action):
         # Move Robot
         self.ob, *_ = self.env.step(action)
+
+    def reset_robot_arm(self):
+        self.init_pos = (self.init_pos+np.round(self.ob['robot_0']['joint_state']['position'][:3],4)).astype(float)
+        init_vel = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
+        init_arm_pos = np.array([0,0,0,0,0,0,-1.5,0,2.0,0,0,0])
+        self.ob, _ = self.env.reset( mount_positions=np.array([self.init_pos]), pos=init_arm_pos,vel=init_vel)

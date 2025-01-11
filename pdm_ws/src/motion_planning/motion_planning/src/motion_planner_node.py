@@ -6,6 +6,7 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray, MultiArrayDimension, Int32
+import matplotlib.pyplot as plt
 
 class MotionPlannerNode(Node):
     def __init__(self):
@@ -72,8 +73,9 @@ class MotionPlannerNode(Node):
             self.arm_trajectory = np.array([[0.3, 0.1, 0.5]])
 
         if(self.state_ == 4):
+            # input("State 4")
             # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.3, 0.2, 0.7]])
+            self.arm_trajectory = np.array([[0.2, 0.5, 0.7]])
 
         if(self.state_ == 5):
             self.base_trajectory = self.base_trajectory[::-1]
@@ -167,8 +169,8 @@ class MotionPlannerNode(Node):
         img_print = cv.circle(img_print, (end[1],end[0]), rad, (255,0,0), 1) 
 
         cv.imshow("Binary Image", image)
-        cv.waitKey(0)
-        cv.destroyAllWindows()
+        # cv.waitKey(0)
+        # cv.destroyAllWindows()
         [V_E, img_print, id] = rrt.RRT_star(np.squeeze(image), start, end,rad,size,img_print)
         print("HAS BEEN FOUND: " + str(id))
         V_E = np.asarray(V_E)
@@ -188,10 +190,9 @@ class MotionPlannerNode(Node):
             p2 = V_E_shortest_smoothed[i + 1].child
             if(i == 0):
                 message.append([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0])
-            points=np.linspace(np.array([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0]),np.array([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0]),num=10)
-            input(points)
+            points=np.linspace(np.array([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0]),np.array([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0]),num=12)
             message.extend([point.tolist() for point in points[1:-1]])
-            # message.append([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0])
+            
                 
             j = j-1
 
@@ -201,8 +202,11 @@ class MotionPlannerNode(Node):
         cv.imshow("Binary Image", img_print)
         cv.waitKey(0)
         cv.destroyAllWindows()
+        # plt.imshow(img_print)
+        # plt.axis('off')
+        # plt.show(block=False)
         # print(message)
-        input(np.array(message, dtype=float))
+       
         return np.array(message, dtype=float)
     
     def map_ready(self):
