@@ -54,7 +54,7 @@ class MotionPlannerNode(Node):
                 return
             shape = tuple(dim.size for dim in dims)
             self.map = np.array(msg.data).reshape(shape)
-        if(self.map_ready):
+        if(self.map_ready and self.base_trajectory.size == 0):
             self.base_trajectory = self.map_rrt()
             self.get_logger().info('generated base_trajectory:"%s"' % self.base_trajectory)
 
@@ -96,7 +96,6 @@ class MotionPlannerNode(Node):
     def init_callback(self, msg):
         self.get_logger().info('Got init pos in motion planner:"%s"' % msg)
         self.init_pos = np.array([msg.x, msg.y, msg.z], dtype=int)
-        print('aqui llego')
 
     def pub_trajectories(self):
         # Create array message with the base trajectory information
