@@ -91,7 +91,6 @@ class PandaEnvNode(Node):
         # Publish current position
         self.base_pos_publisher_.publish(msg)
         self.get_logger().info('Publishing base pos from panda_env Node: "%s"' % msg)
-        print(ob)
     
     def pub_arm_pos(self):
         ob = self.panda_sym.Get_Ob()
