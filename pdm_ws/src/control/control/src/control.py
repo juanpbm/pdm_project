@@ -23,13 +23,15 @@ class Controller:
     def __init__(self):
         # Robot constants
         self.n_actions = 12 # Number of actuators only the first 3 are used by the base
-        self.base_max_vel = 0.5 # limit of the robot TODO: get exact value
+        self.base_max_vel = 1 # limit of the robot TODO: get exact value
         self.arm_max_vel = 0.5
-        self.Kp=5
-        self.Kd=2
+        self.Kp=8
+        self.Kd=0
+        self.Ki=0
+        self.integral=0
         self.e_prev_arm=[0,0,0]
         self.time_prev_arm=0
-        self.e_prev_base=[0,0,0]
+        self.e_prev_base=[0,0]
         self.time_prev_base=0
         self.arm_current_target_waypoint=0
         self.base_current_target_waypoint=0
@@ -152,9 +154,10 @@ class Controller:
         
         if (len(target_waypoints)>1):
             for a in range(len(coordinates_trajectory)):
-                if (np.linalg.norm(coordinates_trajectory[a]-via_points[b+1])<0.01):
-                    target_waypoints[b]=a
-                    b+=1
+                if(b<(len(via_points)-1)):
+                    if (np.linalg.norm(coordinates_trajectory[a]-via_points[b+1])<0.01):
+                        target_waypoints[b]=a
+                        b+=1
             target_waypoints=np.array(target_waypoints)
         else: 
             target_waypoints=np.array([len(coordinates_trajectory)-1])
@@ -169,10 +172,11 @@ class Controller:
         action_to_send = [0.0,0.0, 0.0]
 
         
-        error_xyz = base_trajectory_cubic[base_waypoint] - current_xyz[:3]
+        error_xyz = base_trajectory_cubic[base_waypoint][:2] - current_xyz[:2]
     
         Derivative_error=self.Kd*(error_xyz - self.e_prev_base)/(base_waypoint+1 - self.time_prev_base)
-        desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
+        self.integral = self.integral + self.Ki*error_xyz*(base_waypoint+1 - self.time_prev_base)
+        desired_velocity_xyz = self.Kp*error_xyz + Derivative_error + self.integral
         action_to_send = desired_velocity_xyz
 
         self.e_prev_base = error_xyz
@@ -181,11 +185,11 @@ class Controller:
         if(base_target_waypoints[self.base_current_target_waypoint]>base_waypoint):
             base_waypoint+=1 
         elif((self.base_current_target_waypoint<(len(base_target_trajectory)-1) ) and 
-                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint]-current_xyz)<0.01)):
+                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint][:2]-current_xyz[:2])<0.05)):
             self.base_current_target_waypoint+=1
         
         elif((self.base_current_target_waypoint==(len(base_target_trajectory)-1)) and
-                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint]-current_xyz)<0.01)):
+                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint][:2]-current_xyz[:2])<0.05)):
             # If all waypoints have been reached stop the base and update the target reached variable
             action_to_send = [0,0,0]
             base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
@@ -193,7 +197,7 @@ class Controller:
         for i in range(len(action_to_send)):
                 if action_to_send[i] > self.base_max_vel:
                     action_to_send[i] = self.base_max_vel
-        action[:3] = action_to_send
+        action[:2] = action_to_send[:2]
         return action, base_target_reached, base_waypoint
     
     def revolute_transform(self, axis, angle):
@@ -293,7 +297,7 @@ class Controller:
         # Get current position and trajectory
         current_arm_joint_pos, current_orientation = self.compute_forward_kinematics(self.joints_list, arm_current_pos)
         
-        target_orientation = np.array([1, 0, 0]) # Euler Angles TODO: where would this come from. 
+        target_orientation = np.array([ 3.14, -0.37,  0.  ]) # Euler Angles TODO: where would this come from. 
         actions_to_send = np.zeros(self.n_actions)
 
             
@@ -325,6 +329,7 @@ class Controller:
         joint_velocities = self.pseudo_jacobian(J, desired_velocity)
 
         actions_to_send=joint_velocities
+        # Check if time of the waypoint corresponding the spline has been reached
         if(arm_target_waypoints[self.arm_current_target_waypoint]>arm_waypoint):
             arm_waypoint+=1 
         elif((self.arm_current_target_waypoint<len(arm_target_trajectory)-1 ) and 

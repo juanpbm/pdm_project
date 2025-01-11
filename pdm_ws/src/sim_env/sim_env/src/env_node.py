@@ -5,24 +5,32 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from sim_env.src.robot_env import Panda_Sym
-from std_msgs.msg import Float64MultiArray, MultiArrayDimension
+from std_msgs.msg import Float64MultiArray, MultiArrayDimension, Int32, Bool
 import warnings
 
 class PandaEnvNode(Node):
     def __init__(self):
         super().__init__('panda_env')
+        self.state_publisher_ = self.create_publisher(Int32, 'new_state', 10)
         self.map_publisher_ = self.create_publisher(Float64MultiArray, 'map', 10)
         self.base_pos_publisher_ = self.create_publisher(Point, 'base_pos', 10)
         self.arm_pos_publisher_ = self.create_publisher(Float64MultiArray, 'arm_pos', 10)
         self.goal_pos_publisher_ = self.create_publisher(Point, 'goal_pos', 10)
         self.init_pos_publisher_ = self.create_publisher(Point, 'init_pos', 10)
-        self.cmd_vel_subscription = self.create_subscription(
+        self.cmd_vel_subscription_ = self.create_subscription(
             Float64MultiArray,
             'cmd_vel',
             self.cmd_callback,
             10)
+        self.new_state_reached_subscription_ = self.create_subscription(
+            Bool,
+            'goal_reached',
+            self.goal_reached_callback,
+            10)
         
         self.panda_sym = Panda_Sym(render=True)
+        self.state_ = Int32()
+        self.state_.data = 0
         self.get_logger().info("panda env Node has been created.")
 
 
@@ -32,6 +40,15 @@ class PandaEnvNode(Node):
         self.get_logger().info('Got vel command in panda_env Node sub: "%s"' % action)
         # Call the function that moves the robot with the received action command
         self.panda_sym.move_panda(action)
+
+    def goal_reached_callback(self, msg):
+        self.get_logger().info('Goal reached')
+        # Set the new value of the state
+        if(self.state_.data < 6 and self.state_.data > 0):
+            self.state_.data += 1
+            self.state_publisher_.publish(self.state_)
+        elif(self.state_ == 6):
+            self.state_.data = 1
 
     def pub_map(self):
         ob = self.panda_sym.Get_Ob()
@@ -52,10 +69,15 @@ class PandaEnvNode(Node):
         # Publish base Trajectory 
         self.map_publisher_.publish(map_msg)
         self.get_logger().info('Published occupancy map')
+        # Publish state 1
+        if(self.state_.data == 0):
+            self.state_.data = 1
+            self.state_publisher_.publish(self.state_)
 
     def pub_base_pos(self):
         # Get the current position of the robot
         ob = self.panda_sym.Get_Ob()
+        print(ob)
         current_xyz = np.round(ob['robot_0']['joint_state']['position'][:3],4)
         
         # Create Point msg

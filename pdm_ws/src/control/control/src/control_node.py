@@ -4,12 +4,14 @@ import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, Int32, Bool
+from control.src.control import Controller
 
 class ControlNode(Node):
     def __init__(self):
         super().__init__('control')
         self.cmd_vel_publisher_ = self.create_publisher(Float64MultiArray, 'cmd_vel', 10)
+        self.goal_reached_ = self.create_publisher(Bool, 'goal_reached', 10)
         self.base_trajectory_subscription = self.create_subscription(
             Float64MultiArray,
             'base_trajectory',
@@ -30,6 +32,13 @@ class ControlNode(Node):
             'arm_pos',
             self.arm_pos_callback,
             10)
+        self.new_state_subscription_ = self.create_subscription(
+            Int32,
+            'new_state',
+            self.new_state_callback,
+            10)
+        
+        self.state_ = 0
 
         self.base_current_pos = np.empty(0)
         self.arm_current_pos = np.empty(0)
@@ -56,7 +65,7 @@ class ControlNode(Node):
             self.base_trajectory = new_trajectory
             # Reset progress variables
             self.base_waypoint = 0
-            self.controller.e_prev_base=[0,0,0]
+            self.controller.e_prev_base=[0,0]
             self.controller.time_prev_base=0
             self.controller.base_current_target_waypoint=0
             self.base_target_reached = False
@@ -96,6 +105,14 @@ class ControlNode(Node):
         self.arm_current_pos = np.array(msg.data, dtype=float)
         self.get_logger().info('Got arm pos in Control Node sub: "%s"' % self.arm_current_pos)
 
+    # Get the new state from the environment
+    def new_state_callback(self, msg):
+        self.state_ = msg.data
+
+    # Get the new state from the environment
+    def new_state_callback(self, msg):
+        self.state_ = msg.data
+
     def move_base(self):
         
         action, self.base_target_reached, self.base_waypoint = self.controller.run_panda_base(self.base_current_pos, self.base_trajectory_cubic,self.base_trajectory, self.base_target_waypoints, self.base_waypoint, self.base_target_reached)
@@ -120,6 +137,16 @@ class ControlNode(Node):
         self.cmd_vel_publisher_.publish(msg)
         self.get_logger().info('Publishing arm actions from control Node: "%s"' % msg.data)
 
+    def pub_goal_reached(self):
+        msg = Bool()
+        msg.data = True
+        self.goal_reached_.publish(msg)
+
+    def pub_goal_reached(self):
+        msg = Bool()
+        msg.data = True
+        self.goal_reached_.publish(msg)
+
     def ready_for_base(self):
         # Make sure all the required information is available
         return self.base_current_pos.size != 0 and self.base_trajectory.size != 0
@@ -134,18 +161,27 @@ def main(args=None):
         rclpy.init(args=args)
         control_node = ControlNode()
         # control_node.run_mobile_reacher()
+        last_state=0
         while (rclpy.ok()):
             rclpy.spin_once(control_node)
             
             # Only start calculations once all the information is available
-            if (control_node.ready_for_base()):
-                while(not control_node.base_target_reached):
+            if (control_node.ready_for_base() and control_node.state_ in {2, 5} and control_node.state_ != last_state):
+                while(not control_node.base_target_reached): # Depending on state
                     control_node.move_base()
                     rclpy.spin_once(control_node)
-            if (control_node.ready_for_arm() and control_node.base_target_reached):
+                last_state = control_node.state_
+                control_node.base_target_reached = False
+                control_node.pub_goal_reached()
+                
+
+            if (control_node.ready_for_arm() and control_node.state_ in {1, 3, 4, 6} and control_node.state_ != last_state): # Depending on state
                 while (not control_node.arm_target_reached):
                     control_node.move_arm()
                     rclpy.spin_once(control_node)
+                last_state = control_node.state_
+                control_node.arm_target_reached = False
+                control_node.pub_goal_reached()
 
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
