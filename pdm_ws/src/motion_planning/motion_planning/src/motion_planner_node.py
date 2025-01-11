@@ -6,6 +6,7 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray, MultiArrayDimension, Int32
+import matplotlib.pyplot as plt
 
 class MotionPlannerNode(Node):
     def __init__(self):
@@ -73,7 +74,7 @@ class MotionPlannerNode(Node):
 
         if(self.state_ == 4):
             # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.3, 0.2, 0.7]])
+            self.arm_trajectory = np.array([[0.5, 0.5, 0.7]])
 
         if(self.state_ == 5):
             self.base_trajectory = self.base_trajectory[::-1]
@@ -84,8 +85,6 @@ class MotionPlannerNode(Node):
             
             # Create array message with the base trajectory information
 
-        # Dummy trajectory. The computed trajectory should return something similar
-        self.arm_trajectory = np.array([[0.6, 0, 0.5]])
         self.pub_trajectories()
 
     def goal_callback(self, msg):
@@ -188,8 +187,10 @@ class MotionPlannerNode(Node):
             p2 = V_E_shortest_smoothed[i + 1].child
             if(i == 0):
                 message.append([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0])
-
-            message.append([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0])
+            points=np.linspace(np.array([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0]),np.array([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0]),num=12)
+            message.extend([point.tolist() for point in points[1:-1]])
+            
+                
             j = j-1
 
             img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  # Smoothed path in yellow
@@ -198,7 +199,8 @@ class MotionPlannerNode(Node):
         cv.imshow("Binary Image", img_print)
         cv.waitKey(0)
         cv.destroyAllWindows()
-        return np.array(message)
+       
+        return np.array(message, dtype=float)
     
     def map_ready(self):
         # make sure that the map and positions are ready

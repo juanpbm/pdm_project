@@ -46,7 +46,10 @@ class PandaEnvNode(Node):
         # Set the new value of the state
         if(self.state_.data < 6 and self.state_.data > 0):
             self.state_.data += 1
+            if(self.state_.data==3):
+                self.panda_sym.reset_robot_arm()
             self.state_publisher_.publish(self.state_)
+            
         elif(self.state_ == 6):
             self.state_.data = 1
 
@@ -94,9 +97,10 @@ class PandaEnvNode(Node):
         current_joint_pos = np.round(ob['robot_0']['joint_state']['position'][3:-2],4)
         msg = Float64MultiArray()
         msg.data = current_joint_pos.astype(np.float64).tolist()
-
+        
         # Publish cmd_vel msg
         self.arm_pos_publisher_.publish(msg)
+
         self.get_logger().info('Publishing arm pos from panda_env Node: "%s"' % msg.data)
 
     def pub_goal_pos(self):
