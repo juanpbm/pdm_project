@@ -307,7 +307,6 @@ class Controller:
         
         orientation_error=self.calc_rot_error(target_orientation_matrix, current_orientation_matrix)
         desired_velocity_orientation = self.Kp * orientation_error
-        
 
         desired_velocity = np.hstack((desired_velocity_xyz, desired_velocity_orientation)) 
         
