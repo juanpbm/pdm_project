@@ -1,4 +1,5 @@
 import rclpy
+import time
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from sim_env.src.robot_env import Panda_Sym
@@ -25,10 +26,19 @@ class PandaEnvNode(Node):
             'goal_reached',
             self.goal_reached_callback,
             10)
-        
+        self.prev_pos = None
+        self.position_xyz = None
+        self.prev_vel = None
+        self.velocity_xyz = None
+        self.start_acc_time = 0.0
+        self.end_acc_time = 0.0
+        self.first = True
         self.panda_sym = Panda_Sym(render=True)
         self.state_ = Int32()
         self.state_.data = 0
+
+        self.accelerations = []
+        self.dist_time = []
         # TODO: what other information or topics are needed?
         print("panda env Node has been created.")
 
@@ -43,10 +53,10 @@ class PandaEnvNode(Node):
     def goal_reached_callback(self, msg):
         self.get_logger().info('Goal reached')
         # Set the new value of the state
-        if(self.state_.data < 3 and self.state_.data > 0):
+        if(self.state_.data < 6 and self.state_.data > 0):
             self.state_.data += 1
             self.state_publisher_.publish(self.state_)
-        elif(self.state_ == 3):
+        elif(self.state_ == 6):
             self.state_.data = 1
 
     def pub_map(self):
@@ -72,7 +82,6 @@ class PandaEnvNode(Node):
         if(self.state_.data == 0):
             self.state_.data = 1
             self.state_publisher_.publish(self.state_)
-            print("SEEEEEEEEEEEEEEEEENT")
 
     def pub_base_pos(self):
         # Get the current position of the robot
@@ -88,6 +97,28 @@ class PandaEnvNode(Node):
         # Publish current position
         self.base_pos_publisher_.publish(msg)
         self.get_logger().info('Publishing base pos from panda_env Node: "%s"' % msg)
+        if(self.first == False):
+            self.end_acc_time = time.time()
+            self.position_xyz =  np.round(ob['robot_0']['joint_state']['position'][:3],4)
+            self.velocity_xyz = np.round(ob['robot_0']['joint_state']['velocity'][:3],4)
+            if(np.round(np.linalg.norm(self.velocity_xyz)) > 0 and np.round(np.linalg.norm(self.prev_vel) > 0)):
+                self.accelerations.append((self.velocity_xyz - self.prev_vel)/(self.end_acc_time - self.start_acc_time))
+
+
+            if np.linalg.norm(self.position_xyz - self.prev_pos) > 0.0 :
+                self.dist_time.append((np.linalg.norm(self.position_xyz - self.prev_pos))/(self.end_acc_time - self.start_acc_time))
+                print(np.linalg.norm(self.prev_pos))
+                print(np.linalg.norm(self.position_xyz))
+
+            self.prev_pos = self.position_xyz
+            self.prev_vel = self.velocity_xyz
+            self.start_acc_time = self.end_acc_time
+
+        else:
+            self.start_acc_time = time.time()
+            self.prev_pos =  np.round(ob['robot_0']['joint_state']['position'][:3],4)
+            self.prev_vel = np.round(ob['robot_0']['joint_state']['velocity'][:3],4)
+            self.first = False
     
     def pub_arm_pos(self):
         ob = self.panda_sym.Get_Ob()
@@ -103,6 +134,7 @@ class PandaEnvNode(Node):
     
 def main(args=None):
     # start the panda_env node
+    start_time = time.time()
     try:
         rclpy.init(args=args)
         panda_env_node = PandaEnvNode()
@@ -111,6 +143,8 @@ def main(args=None):
             panda_env_node.pub_base_pos()
             panda_env_node.pub_arm_pos()
             rclpy.spin_once(panda_env_node, timeout_sec=5)
+            if(panda_env_node.state_.data == 6):
+                break
 
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
@@ -119,7 +153,16 @@ def main(args=None):
             panda_env_node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
-            
+
+        aver_dist_time = np.round(np.mean(np.abs(panda_env_node.dist_time)),3)
+        print("Average distance/time: " + str(aver_dist_time))
+        diff_acc = np.diff(panda_env_node.accelerations)
+        aver_acc = np.mean(np.abs(diff_acc))
+        print("Smoothness value: " + str(aver_acc))
+
+        end_time = time.time() 
+        execution_time = end_time - start_time
+        print("Time: " + str(np.round(execution_time,3)) + "s")
         print("panda env Node has been shut down.")
 
 if __name__ == "__main__":

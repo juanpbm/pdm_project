@@ -1,6 +1,8 @@
 import warnings
 import gymnasium as gym
 import numpy as np
+import pybullet as p
+import pybullet_data
 
 from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
@@ -54,7 +56,7 @@ class Panda_Sym:
             interval=1000000,
             plotting_interval=1000000,
         )
-
+        
         self.env.add_sensor(sensor, [0])
         # Set spaces AFTER all components have been added.
         self.env.set_spaces()
@@ -83,7 +85,8 @@ class Panda_Sym:
         self.Gen_Rooms()
         self.Gen_Room_Obstacles()
         self.Gen_Shelf()
-        self.env = UrdfEnv(dt=0.01, robots=self.panda_robot, render=self.render, num_sub_steps=200,)
+        self.env = UrdfEnv(dt=0.01, robots=self.panda_robot, render=self.render, num_sub_steps=200)
+        self.env.reconfigure_camera(camera_distance = 2.0,camera_yaw = 90.0,camera_pitch=0.0,camera_target_position = [10.0,-8.0,7.0])
 
         for wall in self.boundary_walls:
             self.env.add_obstacle(wall)
@@ -102,6 +105,21 @@ class Panda_Sym:
         self.env.add_obstacle(self.shelf6)
         vel0 = np.array([0.0, 0.0, 0.0])
         self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=vel0)
+        p.connect(p.DIRECT)
+        # Set the search path for PyBullet data (optional, for other assets)
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+
+        # Create a collision shape for the plane
+        plane_shape = p.createCollisionShape(shapeType=p.GEOM_PLANE,halfExtents=[50, 50, 1])
+
+        # Create a plane with the collision shape
+        ground_id = p.createMultiBody(baseMass=0,baseCollisionShapeIndex=plane_shape,basePosition=[0, 0, 0.01])
+
+        # Change the visual appearance of the ground to white
+        p.changeVisualShape(ground_id, -1, rgbaColor=[1, 1, 1, 1])  # RGBA: White color
+
+
+        
 
     def Gen_Panda(self):
         self.panda_robot = [

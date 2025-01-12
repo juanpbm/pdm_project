@@ -187,11 +187,11 @@ class MotionPlannerNode(Node):
 
             img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  # Smoothed path in yellow
 
-        # print(message)
-        # Display the Binary Image
-        cv.imshow("Binary Image", img_print)
-        cv.waitKey(0)
-        cv.destroyAllWindows()
+        plt.imshow(img_print, cmap='gray')  # Use 'gray' colormap for grayscale images
+        plt.title("Grayscale Image")
+        plt.axis('off')
+        plt.show()
+
         return np.array(message)
     
 def main(args=None):

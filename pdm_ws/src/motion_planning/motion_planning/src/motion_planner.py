@@ -24,7 +24,8 @@ class Conex:
 
 class RRT:
     def __init__(self):
-        self.N = 1200                                                                                      # Maximum number of iterations
+        self.N_max = 5000                                                                                  # Maximum number of iterations
+        self.N = 2000
         self.gamma = 400                                                                                  # Gamma value for the algorithm
         self.d = 2                                                                                          # d value for the algorithm
 
@@ -136,9 +137,10 @@ class RRT:
         s = Conex((None,None),start, None,0)
         V_E = []
         V_E.append(s)
+        idx = -1
 
         # Go through iterations to get the trajectory in order to arrive at the goal position
-        for n in range(self.N):
+        for n in range(self.N_max):
             # Change the radius of updatind depending on the iteration number
             rad = self.gamma * (np.log(n+1) / (n+1)) ** (1 / self.d)
 
@@ -150,8 +152,6 @@ class RRT:
             #   - It has to be outside an obstacle
             #   - The line between the closes neightbour and the point must be clear (do not go through an obstacle)
             while(ok == False):
-                new_w = np.random.randint(2,size[0]-2)
-                new_h = np.random.randint(2,size[1]-2)
                 # With a 10% of probability, the new node will be the last node - THIS IS NOT PART OF THE RRT* BUT AN IMPROVEMENT FOR OUR PROBLEM
                 if np.random.uniform(0, 1) < 0.1:
                     new_w = end[0]
@@ -179,20 +179,20 @@ class RRT:
                             image = cv.circle(image, (new_node.child[1], new_node.child[0]), 2, (0,255,0), -1)          # Draw the point on the image
 
                             # Go through all the neightbours of the new node to update their costs if necessary
-                            for n in neight:
+                            for nei in neight:
                                 # The cost will be updated if:
                                 #   - The cost of the neightbour is not None (not start point)
                                 #   - The new cost is smaller that the older cost of the neightbour
                                 #   - The new neightbour is  not the closest one
                                 #   - There is a clear line between the neightbour and the new node
-                                if((n.cost != None and cost + self.EuclideanDistance(new_node.child,n.child) < n.cost) and n.id!=closest.id 
-                                and self.ClearLine(n.child[0],n.child[1],new_node,img) == True):
+                                if((nei.cost != None and cost + self.EuclideanDistance(new_node.child,nei.child) < nei.cost) and nei.id!=closest.id 
+                                and self.ClearLine(nei.child[0],nei.child[1],new_node,img) == True):
                                     # Update the cost of the 
-                                    V_E[n.id].parent = new_node.child
-                                    V_E[n.id].cost = cost + self.EuclideanDistance(new_node.child, n.child)
+                                    V_E[nei.id].parent = new_node.child
+                                    V_E[nei.id].cost = cost + self.EuclideanDistance(new_node.child, nei.child)
 
                                     # Update the costs of the child nodes of the update node
-                                    self.update_costs(n, V_E)
+                                    self.update_costs(nei, V_E)
 
                         else:
                             ok = False
@@ -200,11 +200,14 @@ class RRT:
                         ok= False
                 else:
                     ok = False
-
             # If the new node is not None and the new node is inside the indicated radius
             if(new_node!=None):
                 if(self.EuclideanDistance(end, new_node.child)==0):
-                    idx =  new_node.id                                                                                         # Finish the algorithm
+                    idx =  new_node.id
+
+            if(n >= self.N and idx >= 0):
+                break                                                                                       # Finish the algorithm
+            
 
         return V_E,image,idx
 
