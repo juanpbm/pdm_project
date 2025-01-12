@@ -24,15 +24,8 @@ class Controller:
         # Robot constants
         self.n_actions = 12 # Number of actuators only the first 3 are used by the base
         self.base_max_vel = 1.2 # limit of the robot TODO: get exact value
-        self.arm_max_vel = 0.5
-        self.Kp=8
-        self.Kd=0
-        self.Ki=0
-        self.integral=0
-        self.e_prev_arm=[0,0,0]
-        self.time_prev_arm=0
-        self.e_prev_base=[0,0]
-        self.time_prev_base=0
+        self.arm_max_vel = 0.7
+        self.Kp=6
         self.arm_current_target_waypoint=0
         self.base_current_target_waypoint=0
 
@@ -174,18 +167,14 @@ class Controller:
         
         error_xyz = base_trajectory_cubic[base_waypoint][:2] - current_xyz[:2]
     
-        Derivative_error=self.Kd*(error_xyz - self.e_prev_base)/(base_waypoint+1 - self.time_prev_base)
-        self.integral = self.integral + self.Ki*error_xyz*(base_waypoint+1 - self.time_prev_base)
-        desired_velocity_xyz = self.Kp*error_xyz + Derivative_error + self.integral
+       
+        desired_velocity_xyz = self.Kp*error_xyz 
         action_to_send = desired_velocity_xyz
-
-        self.e_prev_base = error_xyz
-        self.time_prev_base = base_waypoint
 
         if(base_target_waypoints[self.base_current_target_waypoint]>base_waypoint):
             base_waypoint+=1 
         elif((self.base_current_target_waypoint<(len(base_target_trajectory)-1) ) and 
-                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint][:2]-current_xyz[:2])<0.08)):
+                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint][:2]-current_xyz[:2])<0.1)):
             self.base_current_target_waypoint+=1
         
         elif((self.base_current_target_waypoint==(len(base_target_trajectory)-1)) and
@@ -306,14 +295,10 @@ class Controller:
             
         error_xyz = arm_trajectory_cubic[arm_waypoint] - current_arm_joint_pos[:3]    
       
-        Derivative_error=self.Kd*(error_xyz - self.e_prev_arm)/(arm_waypoint+1 - self.time_prev_arm)
-        desired_velocity_xyz = self.Kp*error_xyz + Derivative_error
+        
+        desired_velocity_xyz = self.Kp*error_xyz 
         actions_to_send = desired_velocity_xyz
 
-        
-
-        self.e_prev_arm = error_xyz
-        self.time_prev_arm = arm_waypoint
     
 
         # Orientation error 
@@ -323,8 +308,6 @@ class Controller:
         orientation_error=self.calc_rot_error(target_orientation_matrix, current_orientation_matrix)
         desired_velocity_orientation = self.Kp * orientation_error
         
-        # if np.linalg.norm(desired_velocity_xyz) > self.arm_max_vel:
-        #     desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * self.arm_max_vel
 
         desired_velocity = np.hstack((desired_velocity_xyz, desired_velocity_orientation)) 
         
