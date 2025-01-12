@@ -18,7 +18,8 @@ class Conex:
 
 class RRT:
     def __init__(self):
-        self.N = 1300                                                                                  # Maximum number of iterations
+        self.N_max = 1500                                                                                  # Maximum number of iterations
+        self.N = 1300
         self.gamma = 400                                                                                  # Gamma value for the algorithm
         self.d = 2                                                                                          # d value for the algorithm
 
@@ -128,9 +129,10 @@ class RRT:
         V_E = []
         V_E.append(s)
         end_reached = False
+        idx = -1
 
         # Go through iterations to get the trajectory in order to arrive at the goal position
-        for n in tqdm(range(self.N)):
+        for n in tqdm(range(self.N_max)):
             # Change the radius of updating depending on the iteration number
             rad = self.gamma * (np.log(n+1) / (n+1)) ** (1 / self.d)
 
@@ -156,11 +158,11 @@ class RRT:
                 if(self.No_obstacle(img,new_w,new_h)):
                     ok = True
 
-                    [closest, neighbor, cost] = self.GetClosestNeighbor(new_w,new_h,V_E,rad)                            # Get the closest neightbour to the point
+                    [closest, neigh, cost] = self.GetClosestNeighbor(new_w,new_h,V_E,rad)                            # Get the closest neighbor to the point
 
                     # If it is a valid neighbor
                     if(closest.id != -1 and closest.child!=end):
-                        # If there is a clear line between the point and the closest neightbour
+                        # If there is a clear line between the point and the closest neighbor
                         if(self.ClearLine(new_w,new_h,closest,img) == True):
                             # Create and add the node to the list
                             if((new_w,new_h) == end):
@@ -172,20 +174,20 @@ class RRT:
                             image = cv.circle(image, (new_node.child[1], new_node.child[0]), 2, (0,255,0), -1)          # Draw the point on the image
 
                             # Go through all the neighbors of the new node to update their costs if necessary
-                            for n in neighbor:
+                            for nei in neigh:
                                 # The cost will be updated if:
                                 #   - The cost of the neighbor is not None (not start point)
                                 #   - The new cost is smaller that the older cost of the neighbor
                                 #   - The new neighbor is  not the closest one
                                 #   - There is a clear line between the neighbor and the new node
-                                if((n.cost != None and cost + self.EuclideanDistance(new_node.child,n.child) < n.cost) and n.id!=closest.id 
-                                and self.ClearLine(n.child[0],n.child[1],new_node,img) == True and n.child!=end):
+                                if((nei.cost != None and cost + self.EuclideanDistance(new_node.child,nei.child) < nei.cost) and nei.id!=closest.id 
+                                and self.ClearLine(nei.child[0],nei.child[1],new_node,img) == True and nei.child != end):
                                     # Update the cost of the 
-                                    V_E[n.id].parent = new_node.child
-                                    V_E[n.id].cost = cost + self.EuclideanDistance(new_node.child, n.child)
+                                    V_E[nei.id].parent = new_node.child
+                                    V_E[nei.id].cost = cost + self.EuclideanDistance(new_node.child, nei.child)
 
                                     # Update the costs of the child nodes of the update node
-                                    self.update_costs(n, V_E)
+                                    self.update_costs(nei, V_E)
 
                         else:
                             ok = False
@@ -193,11 +195,14 @@ class RRT:
                         ok= False
                 else:
                     ok = False
-
             # If the new node is not None and the new node is inside the indicated radius
             if(new_node!=None):
                 if(self.EuclideanDistance(end, new_node.child)==0):
-                    idx =  new_node.id                                                                                         # Finish the algorithm
+                    idx =  new_node.id
+
+            if(n >= self.N and idx >= 0):
+                break                                                                                       # Finish the algorithm
+            
 
         return V_E,image,idx
 

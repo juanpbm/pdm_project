@@ -1,3 +1,4 @@
+import os
 import cv2 as cv
 from geometry_msgs.msg import Point
 from motion_planning.src.motion_planner import RRT
@@ -7,6 +8,7 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray, MultiArrayDimension, Int32
 import matplotlib.pyplot as plt
+from ament_index_python.packages import get_package_share_directory
 
 class MotionPlannerNode(Node):
     def __init__(self):
@@ -212,12 +214,16 @@ class MotionPlannerNode(Node):
             j = j-1
 
             img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  # Smoothed path in yellow
-        
-        # Display the Binary Image
-        cv.imshow("Binary Image", img_print)
-        cv.waitKey(0)
-        cv.destroyAllWindows()
+
         message[-1][0]+=0.4
+
+        img_path = os.path.join(os.path.dirname(get_package_share_directory('motion_planning')), 'motion_planning', 'resource', "RRT_star_result.png")
+        fig = plt.figure(figsize=(3, 3))
+        plt.imshow(img_print, cmap='gray')
+        plt.title("RRT* Result")
+        plt.axis('off')
+        fig.savefig(img_path, dpi=fig.dpi)
+       
         return np.array(message, dtype=float)
     
     def map_ready(self):

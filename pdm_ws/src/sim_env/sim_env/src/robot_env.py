@@ -1,5 +1,8 @@
 import gymnasium as gym
 import numpy as np
+import pybullet as p
+import pybullet_data
+
 from mpscenes.obstacles.sphere_obstacle import SphereObstacle
 from mpscenes.obstacles.box_obstacle import BoxObstacle
 from urdfenvs.robots.generic_urdf import GenericUrdfReacher
@@ -45,7 +48,7 @@ class Panda_Sym:
             interval=1000000,
             plotting_interval=1000000,
         )
-
+        
         self.env.add_sensor(sensor, [0])
         # Set spaces AFTER all components have been added.
         self.env.set_spaces()
