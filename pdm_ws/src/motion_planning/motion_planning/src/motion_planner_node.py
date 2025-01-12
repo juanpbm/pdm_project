@@ -1,27 +1,32 @@
+import cv2 as cv
+from geometry_msgs.msg import Point
+from motion_planning.src.motion_planner import RRT
+import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-import numpy as np
-from std_msgs.msg import Float64MultiArray, MultiArrayDimension, String
-import cv2 as cv
-from motion_planning.src.motion_planner import RRT
-
-from ament_index_python.packages import get_package_share_directory
-import os
-
-import matplotlib.pyplot as plt
-
 from std_msgs.msg import Float64MultiArray, MultiArrayDimension, Int32
+import matplotlib.pyplot as plt
 
 class MotionPlannerNode(Node):
     def __init__(self):
         super().__init__('motion_planner')
         self.base_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'base_trajectory', 10)
         self.arm_trajectory_publisher_ = self.create_publisher(Float64MultiArray, 'arm_trajectory', 10)
-        self.subscription_ = self.create_subscription(
+        self.map_subscription_ = self.create_subscription(
             Float64MultiArray,
             'map',
             self.map_callback,
+            10)
+        self.goal_subscription_ = self.create_subscription(
+            Point,
+            'goal_pos',
+            self.goal_callback,
+            10)
+        self.init_pos_subscription_ = self.create_subscription(
+            Point,
+            'init_pos',
+            self.init_callback,
             10)
 
         self.new_state_subscription_ = self.create_subscription(
@@ -36,7 +41,9 @@ class MotionPlannerNode(Node):
         self.map = None
         self.base_trajectory = np.empty(0)
         self.arm_trajectory = np.empty(0)
-        print("motion_planner Node has been created.")
+        self.base_goal = np.empty(0)
+        self.init_pos = np.empty(0)
+        self.get_logger().info("motion_planner Node has been created.")
 
     def map_callback(self, msg):
         self.get_logger().info('Got Map in Motion Planning Node sub')
@@ -48,36 +55,26 @@ class MotionPlannerNode(Node):
                 return
             shape = tuple(dim.size for dim in dims)
             self.map = np.array(msg.data).reshape(shape)
-
-            slice_index = 1
-            slice_data = self.map[:,:,slice_index]
-
-            plt.imshow(slice_data, cmap="gray", origin="lower")
-            plt.title(f"Occupancy map")
-            plt.show()
-
+        if(self.map_ready and self.base_trajectory.size == 0):
             self.base_trajectory = self.map_rrt()
-            print(self.base_trajectory)
+            self.get_logger().info('generated base_trajectory:"%s"' % self.base_trajectory)
 
     # Get the new environment from the environment
     def new_state_callback(self, msg):
         self.state_ = msg.data
-        print(self.state_)
-        print(self.base_trajectory)
         if(self.state_ == 1):
             while(self.base_trajectory == np.empty(0)):
-                print("No salgo")
                 return
             # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.5, 0, 0.5]])
+            self.arm_trajectory = np.array([[0.3, 0.2, 0.7]])
         
         if(self.state_ == 3):
             # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.6, 0, 0.5]])
+            self.arm_trajectory = np.array([[0.3, 0.1, 0.5]])
 
         if(self.state_ == 4):
             # Dummy trajectory. The computed trajectory should return something similar
-            self.arm_trajectory = np.array([[0.5, 0, 0.5]])
+            self.arm_trajectory = np.array([[0.5, 0.5, 0.7]])
 
         if(self.state_ == 5):
             self.base_trajectory = self.base_trajectory[::-1]
@@ -87,8 +84,20 @@ class MotionPlannerNode(Node):
             self.arm_trajectory = np.array([[0.6, 0, 0.5]])
             
             # Create array message with the base trajectory information
-        print("Si salgo")
-        print(self.base_trajectory)
+
+        self.pub_trajectories()
+
+    def goal_callback(self, msg):
+        self.get_logger().info('Got goal pos in motion planner:"%s"' % msg)
+        self.arm_goal = np.array([msg.x, msg.y, msg.z], dtype=int)
+        self.base_goal = np.array([msg.x - 0.5, msg.y, msg.z], dtype=int)
+    
+    def init_callback(self, msg):
+        self.get_logger().info('Got init pos in motion planner:"%s"' % msg)
+        self.init_pos = np.array([msg.x, msg.y, msg.z], dtype=int)
+
+    def pub_trajectories(self):
+        # Create array message with the base trajectory information
         base_msg = Float64MultiArray()
         base_msg.data = self.base_trajectory.flatten().tolist()
         assert all(isinstance(val, float) for val in base_msg.data) # All elements must be floats
@@ -111,8 +120,6 @@ class MotionPlannerNode(Node):
         # Publish arm trajectory
         self.arm_trajectory_publisher_.publish(arm_msg)
         self.get_logger().info('Published arm_target_xyz:"%s"' % arm_msg.data)
-
-    #Functions that use the motion planning class to compute the RRT
 
     def map_rrt(self):
         image_array = self.map
@@ -140,11 +147,10 @@ class MotionPlannerNode(Node):
 
         # Variables to make the algorithm work
         size = img.shape
-        start = (140,40)
-        end = (20,160)
+        start = (np.abs(self.init_pos[1]) * 10, self.init_pos[0] * 10)
+        end = (np.abs(self.base_goal[1]) * 10, self.base_goal[0] * 10)
         rad = 5
         done = False
-
         img_print = img.copy()
         image = img.copy()
 
@@ -181,8 +187,10 @@ class MotionPlannerNode(Node):
             p2 = V_E_shortest_smoothed[i + 1].child
             if(i == 0):
                 message.append([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0])
-
-            message.append([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0])
+            points=np.linspace(np.array([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0]),np.array([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0]),num=12)
+            message.extend([point.tolist() for point in points[1:-1]])
+            
+                
             j = j-1
 
             img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  # Smoothed path in yellow
@@ -191,8 +199,12 @@ class MotionPlannerNode(Node):
         plt.title("Grayscale Image")
         plt.axis('off')
         plt.show()
-
-        return np.array(message)
+       
+        return np.array(message, dtype=float)
+    
+    def map_ready(self):
+        # make sure that the map and positions are ready
+        return self.map is not None and self.base_goal.size != 0 and self.init_pos.size != 0
     
 def main(args=None):
     # start the motion planning node
@@ -209,7 +221,7 @@ def main(args=None):
         if rclpy.ok():
             rclpy.shutdown()
             
-        print("motion_planner Node has been shut down.")
+        motion_planner_node.get_logger().info("motion_planner Node has been shut down.")
 
 if __name__ == "__main__":
     # Call Main Function

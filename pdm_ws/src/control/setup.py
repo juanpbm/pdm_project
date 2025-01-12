@@ -15,7 +15,7 @@ setup(
             'resource/joints_origin.pickle'
         ]),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'numpy'],
     zip_safe=True,
     maintainer='juaber',
     maintainer_email='jbernalmedina@tudelft.nl',

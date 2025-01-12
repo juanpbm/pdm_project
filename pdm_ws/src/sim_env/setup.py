@@ -30,8 +30,11 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/gym_envs_urdf', gym_envs_urdf_files),
+        ('share/' + package_name + '/resource', [
+            'resource/map1.json','resource/map2.json','resource/map3.json','resource/map4.json',
+        ]),
     ],
-    install_requires=['setuptools', 'urdfenvs', 'keyboard'],
+    install_requires=['setuptools', 'urdfenvs', 'keyboard', 'numpy'],
     zip_safe=True,
     maintainer='juaber',
     maintainer_email='jbernalmedina@tudelft.nl',

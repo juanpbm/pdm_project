@@ -1,14 +1,9 @@
-import rclpy
-from rclpy.node import Node
-import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
 import sys
+from tqdm import tqdm
 
 sys.setrecursionlimit(20_000)
-
-# Global variables
-message = []                                                                                                # Message for ros topic
 
 class Conex:
     # Constructor of the class
@@ -20,7 +15,6 @@ class Conex:
         self.child = (c[0],c[1])
 
         self.cost = cst
-
 
 class RRT:
     def __init__(self):
@@ -44,12 +38,12 @@ class RRT:
         else:
             return False
 
-    # Returns the closest neightbour in the already generated graph to the newly randomly created point
-    def GetClosestNeightbour(self, p_w,p_h,V_E,r):
-        # Initialize distance, closest neightbour and a list to add all the neightbours within a radius 'r'
+    # Returns the closest neighbor in the already generated graph to the newly randomly created point
+    def GetClosestNeighbor(self, p_w,p_h,V_E,r):
+        # Initialize distance, closest neighbor and a list to add all the neighbors within a radius 'r'
         dist = 100000000
         closest = Conex((None,None),(None,None), None,-1)
-        neight = []
+        neighbor = []
 
         # Go through all the nodes of the graph
         for i in V_E:
@@ -57,18 +51,18 @@ class RRT:
             
             # If the distance is less or equal than the radius
             if(d<=r):
-                neight.append(i)                                                                                # Append the node
+                neighbor.append(i)                                                                                # Append the node
                 
                 # If it is the smallest distance among all of the ones computed until now
                 if(d<dist):
-                    # Update the closest neightbour 
+                    # Update the closest neighbor 
                     if(i.cost != None):
                         dist = d + i.cost
                     else:
                         dist = d
                     closest = i            
 
-        return closest,neight,dist
+        return closest, neighbor, dist
 
     # Returns true if the position between the 2 points is clear (no obstacles)
     def ClearLine(self,new_w,new_h,p,img):
@@ -94,7 +88,7 @@ class RRT:
         while stack:
             current_node = stack.pop()                                                                              # Pop the current node from the stack
 
-            # Skip the visitated nodes
+            # Skip the visited nodes
             if current_node.child in visited:                                                                       
                 continue
 
@@ -126,9 +120,6 @@ class RRT:
                 smoothed_path.append(path[i + 1])
                 i = i + 1
 
-        #if path[-1] not in smoothed_path:
-        #    smoothed_path.append(path[-1])
-
         return smoothed_path
 
     # RRT* algorithm
@@ -137,23 +128,25 @@ class RRT:
         s = Conex((None,None),start, None,0)
         V_E = []
         V_E.append(s)
+        end_reached = False
         idx = -1
 
         # Go through iterations to get the trajectory in order to arrive at the goal position
-        for n in range(self.N_max):
-            # Change the radius of updatind depending on the iteration number
+        for n in tqdm(range(self.N_max)):
+            # Change the radius of updating depending on the iteration number
             rad = self.gamma * (np.log(n+1) / (n+1)) ** (1 / self.d)
 
-            # Auxiliar values to make the algorithm work
+            # Auxiliary values to make the algorithm work
             new_node = None
             cost = 9999999
             ok = False
+
             # Iterate until it finds a node that can be introduced to the graph:
             #   - It has to be outside an obstacle
-            #   - The line between the closes neightbour and the point must be clear (do not go through an obstacle)
+            #   - The line between the closes neighbor and the point must be clear (do not go through an obstacle)
             while(ok == False):
                 # With a 10% of probability, the new node will be the last node - THIS IS NOT PART OF THE RRT* BUT AN IMPROVEMENT FOR OUR PROBLEM
-                if np.random.uniform(0, 1) < 0.1:
+                if (np.random.uniform(0, 1) < 0.1 and end_reached == False):
                     new_w = end[0]
                     new_h = end[1]
                 else:
@@ -163,16 +156,18 @@ class RRT:
 
                 # If the new point is not inside an obstacle
                 if(self.No_obstacle(img,new_w,new_h)):
-                    print(n)
                     ok = True
 
-                    [closest, neight, cost] = self.GetClosestNeightbour(new_w,new_h,V_E,rad)                            # Get the closest neightbour to the point
+                    [closest, neighbor, cost] = self.GetClosestNeighbor(new_w,new_h,V_E,rad)                            # Get the closest neightbour to the point
 
-                    # If it is a valid neightbour
-                    if(closest.id != -1):
+                    # If it is a valid neighbor
+                    if(closest.id != -1 and closest.child!=end):
                         # If there is a clear line between the point and the closest neightbour
                         if(self.ClearLine(new_w,new_h,closest,img) == True):
                             # Create and add the node to the list
+                            if((new_w,new_h) == end):
+                                end_reached = True
+
                             new_node = Conex(closest.child,(new_w,new_h), cost,n+1)
                             V_E.append(new_node)
 
@@ -223,5 +218,3 @@ class RRT:
             if(point.child == last.parent):
                 shortest.append(last)
                 return self.find_shortest(shortest, V_E,point)
-
-        print("fuera")

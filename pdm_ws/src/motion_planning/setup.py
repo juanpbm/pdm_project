@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools', 'rclpy', 'sim_env'],
+    install_requires=['setuptools', 'rclpy', 'opencv-python'],
     zip_safe=True,
     maintainer='juaber',
     maintainer_email='jbernalmedina@tudelft.nl',
