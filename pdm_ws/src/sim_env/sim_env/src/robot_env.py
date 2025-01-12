@@ -99,7 +99,7 @@ class Panda_Sym:
             self.env.add_obstacle(self.shelf6)
 
         self.env.add_obstacle(self.pedestal_goal)
-        # self.env.add_obstacle(self.object_goal)
+        self.env.add_obstacle(self.object_goal)
         self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=np.array([0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]))
         p.connect(p.DIRECT)
         # Set the search path for PyBullet data (optional, for other assets)

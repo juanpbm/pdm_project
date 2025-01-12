@@ -52,7 +52,7 @@ class MotionPlannerNode(Node):
         self.base_goal = np.empty(0)
         self.init_pos = np.empty(0)
         self.base_current_pos= np.empty(0)
-        self.safe_arm_pos = np.array([[0.3, 0, 0.3]],dtype=float)
+        self.safe_arm_pos = np.array([[0.32, 0, 0.3]],dtype=float)
         self.get_logger().info("motion_planner Node has been created.")
 
     def map_callback(self, msg):
@@ -83,19 +83,15 @@ class MotionPlannerNode(Node):
             # safe position
             self.arm_trajectory = self.safe_arm_pos
 
-        elif(self.state_ == 2):
-            # same as in 1
-            self.arm_trajectory = self.safe_arm_pos
-            # print("State 2")
 
         elif(self.state_ == 3):
             # goal position
-            self.arm_trajectory = np.array([self.arm_goal],dtype=float)
+
+            # Add the offset as a new row to the trajectory
+            self.arm_trajectory = np.vstack([np.array([0.32, 0, 0.6], dtype=float), np.array([self.arm_goal],dtype=float)])
 
         elif(self.state_ == 4):
             # safe position
-            # print("State 4")
-            # input(self.safe_arm_pos)
             self.arm_trajectory = self.safe_arm_pos
 
         elif(self.state_ == 5):
@@ -111,7 +107,7 @@ class MotionPlannerNode(Node):
     def goal_callback(self, msg):
         self.get_logger().info('Got goal pos in motion planner:"%s"' % msg)
         if(self.base_current_pos.size != 0):
-            self.arm_goal = np.array([msg.x -self.base_current_pos[0], msg.y-self.base_current_pos[1], msg.z], dtype=float)
+            self.arm_goal = np.array([msg.x -self.base_current_pos[0], msg.y-self.base_current_pos[1], msg.z + 0.2], dtype=float)
         self.base_goal = np.array([msg.x -0.6, msg.y, 0], dtype=float)
     
     def init_callback(self, msg):
@@ -211,7 +207,7 @@ class MotionPlannerNode(Node):
             if(i == 0):
                 message.append([(V_E_shortest_smoothed[j].child[1]/10), -V_E_shortest_smoothed[j].child[0]/10, 0])
 
-            points=np.linspace(np.array([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0]),np.array([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0]),num=12)
+            points=np.linspace(np.array([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0]),np.array([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0]),num=22)
             message.extend([point.tolist() for point in points[1:]])
                 
             j = j-1
