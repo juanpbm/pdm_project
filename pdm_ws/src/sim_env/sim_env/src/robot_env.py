@@ -95,8 +95,8 @@ class Panda_Sym:
             self.env.add_obstacle(self.shelf5)
             self.env.add_obstacle(self.shelf6)
 
-        self.env.add_obstacle(self.base_goal)
-        self.env.add_obstacle(self.arm_goal)
+        self.env.add_obstacle(self.pedestal_goal)
+        # self.env.add_obstacle(self.object_goal)
         self.ob, _ = self.env.reset(mount_positions=np.array([self.init_pos]), vel=np.array([0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]))
         p.connect(p.DIRECT)
         # Set the search path for PyBullet data (optional, for other assets)
@@ -166,9 +166,9 @@ class Panda_Sym:
 
     def Gen_Goals(self):
     
-        self.base_goal = BoxObstacle(name='obstacle1', content_dict=(self.goals[0]))
+        self.pedestal_goal = BoxObstacle(name='obstacle1', content_dict=(self.goals[1]))
         
-        self.arm_goal = BoxObstacle(name='obstacle1', content_dict=(self.goals[1]))
+        self.object_goal = BoxObstacle(name='obstacle1', content_dict=(self.goals[0]))
         self.goal_pos = self.goals[0]['geometry']['position']
     
     def Get_Ob(self):
@@ -189,5 +189,5 @@ class Panda_Sym:
     def reset_robot_arm(self):
         self.init_pos = (self.init_pos+np.round(self.ob['robot_0']['joint_state']['position'][:3],4)).astype(float)
         init_vel = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
-        init_arm_pos = np.array([0,0,0,0,0,0,-1.5,0,2.0,0,0,0])
+        init_arm_pos = np.array([0,0,0,0,0,0,-3.0,0.0,3.4,0,0,0])
         self.ob, _ = self.env.reset( mount_positions=np.array([self.init_pos]), pos=init_arm_pos,vel=init_vel)
