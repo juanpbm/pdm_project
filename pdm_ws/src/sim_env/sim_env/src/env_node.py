@@ -48,6 +48,8 @@ class PandaEnvNode(Node):
             self.state_.data += 1
             if(self.state_.data==3):
                 self.panda_sym.reset_robot_arm()
+            # if(self.state_.data==2):
+            #     input(self.panda_sym.Get_Ob())
             self.state_publisher_.publish(self.state_)
             
         elif(self.state_ == 6):

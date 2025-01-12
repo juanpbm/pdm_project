@@ -34,6 +34,11 @@ class MotionPlannerNode(Node):
             'new_state',
             self.new_state_callback,
             10)
+        self.base_pos_subscription = self.create_subscription(
+            Point,
+            'base_pos',
+            self.base_pos_callback,
+            10)
         
         self.state_ = 0
 
@@ -43,7 +48,8 @@ class MotionPlannerNode(Node):
         self.arm_trajectory = np.empty(0)
         self.base_goal = np.empty(0)
         self.init_pos = np.empty(0)
-        self.safe_arm_pos = np.array([[0.3, 0, 0.3]])
+        self.base_current_pos= np.empty(0)
+        self.safe_arm_pos = np.array([[0.3, 0, 0.3]],dtype=float)
         self.get_logger().info("motion_planner Node has been created.")
 
     def map_callback(self, msg):
@@ -60,6 +66,11 @@ class MotionPlannerNode(Node):
             self.base_trajectory = self.map_rrt()
             self.get_logger().info('generated base_trajectory:"%s"' % self.base_trajectory)
 
+    def base_pos_callback(self, msg):    
+        # Recover position information as a 1D array
+        self.base_current_pos = np.array([msg.x, msg.y, msg.z], dtype=float)
+        self.get_logger().info('Got base pos in Control Node sub: "%s"' % self.base_current_pos)
+
     # Get the new environment from the environment
     def new_state_callback(self, msg):
         self.state_ = msg.data
@@ -75,10 +86,12 @@ class MotionPlannerNode(Node):
 
         elif(self.state_ == 3):
             # goal position
-            self.arm_trajectory = np.array(self.arm_goal)
+            self.arm_trajectory = np.array([self.arm_goal],dtype=float)
 
         elif(self.state_ == 4):
             # safe position
+            # print("State 4")
+            #input(self.safe_arm_pos)
             self.arm_trajectory = self.safe_arm_pos
 
         elif(self.state_ == 5):
@@ -93,8 +106,9 @@ class MotionPlannerNode(Node):
 
     def goal_callback(self, msg):
         self.get_logger().info('Got goal pos in motion planner:"%s"' % msg)
-        self.arm_goal = np.array([msg.x, msg.y, msg.z], dtype=int)
-        self.base_goal = np.array([msg.x - 0.2, msg.y, 0], dtype=int)
+        if(self.base_current_pos.size != 0):
+            self.arm_goal = np.array([msg.x -self.base_current_pos[0], msg.y-self.base_current_pos[1], msg.z], dtype=float)
+        self.base_goal = np.array([msg.x -0.6, msg.y, 0], dtype=float)
     
     def init_callback(self, msg):
         self.get_logger().info('Got init pos in motion planner:"%s"' % msg)
@@ -151,8 +165,8 @@ class MotionPlannerNode(Node):
 
         # Variables to make the algorithm work
         size = img.shape
-        start = (np.abs(self.init_pos[1]) * 10, self.init_pos[0] * 10)
-        end = (np.abs(self.base_goal[1]) * 10, self.base_goal[0] * 10)
+        start = (np.abs(self.init_pos[1].astype(int) ) * 10, self.init_pos[0].astype(int) * 10)
+        end = (np.abs(self.base_goal[1].astype(int) ) * 10, self.base_goal[0].astype(int)  * 10)
         rad = 5
         done = False
         img_print = img.copy()
@@ -189,21 +203,22 @@ class MotionPlannerNode(Node):
         for i in range(len(V_E_shortest_smoothed) - 1):
             p1 = V_E_shortest_smoothed[i].child
             p2 = V_E_shortest_smoothed[i + 1].child
-            if(i == 0):
-                message.append([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0])
-            points=np.linspace(np.array([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0]),np.array([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0]),num=12)
-            message.extend([point.tolist() for point in points[1:-1]])
             
+            if(i == 0):
+                message.append([(V_E_shortest_smoothed[j].child[1]/10), -V_E_shortest_smoothed[j].child[0]/10, 0])
+
+            points=np.linspace(np.array([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0]),np.array([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0]),num=12)
+            message.extend([point.tolist() for point in points[1:]])
                 
             j = j-1
 
             img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  # Smoothed path in yellow
-
+        
         # Display the Binary Image
         cv.imshow("Binary Image", img_print)
         cv.waitKey(0)
         cv.destroyAllWindows()
-       
+        message[-1][0]+=0.4
         return np.array(message, dtype=float)
     
     def map_ready(self):
