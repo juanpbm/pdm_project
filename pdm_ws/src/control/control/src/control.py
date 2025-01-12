@@ -23,7 +23,7 @@ class Controller:
     def __init__(self):
         # Robot constants
         self.n_actions = 12 # Number of actuators only the first 3 are used by the base
-        self.base_max_vel = 1 # limit of the robot TODO: get exact value
+        self.base_max_vel = 1.2 # limit of the robot TODO: get exact value
         self.arm_max_vel = 0.5
         self.Kp=8
         self.Kd=0
@@ -189,11 +189,12 @@ class Controller:
             self.base_current_target_waypoint+=1
         
         elif((self.base_current_target_waypoint==(len(base_target_trajectory)-1)) and
-                (np.linalg.norm(base_target_trajectory[self.base_current_target_waypoint][:2]-current_xyz[:2])<0.05)):
+                (abs(base_target_trajectory[self.base_current_target_waypoint][0]-current_xyz[0])<0.03) and
+                (abs(base_target_trajectory[self.base_current_target_waypoint][1]-current_xyz[1])<0.03)):
             # If all waypoints have been reached stop the base and update the target reached variable
             action_to_send = [0,0,0]
             base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
-
+            
         for i in range(len(action_to_send)):
                 if action_to_send[i] > self.base_max_vel:
                     action_to_send[i] = self.base_max_vel
@@ -321,9 +322,6 @@ class Controller:
         
         orientation_error=self.calc_rot_error(target_orientation_matrix, current_orientation_matrix)
         desired_velocity_orientation = self.Kp * orientation_error
-        
-        if np.linalg.norm(desired_velocity_xyz) > self.arm_max_vel:
-            desired_velocity_xyz = desired_velocity_xyz / np.linalg.norm(desired_velocity_xyz) * self.arm_max_vel
 
         desired_velocity = np.hstack((desired_velocity_xyz, desired_velocity_orientation)) 
         
@@ -342,12 +340,17 @@ class Controller:
         elif((self.arm_current_target_waypoint==len(arm_target_trajectory)-1 ) and 
                 (np.linalg.norm(arm_target_trajectory[self.arm_current_target_waypoint]-current_arm_joint_pos)<0.01)):
             actions_to_send = np.zeros(self.n_actions)
-            arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue    
+            arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue   
+
+            
             
 
             
         # These are the instructions to move the arm
-        for i in range(len(self.joints_list)-2):      
-                action[i + 3] = actions_to_send[i]
+        for i in range(len(self.joints_list)-2):  
+                if(actions_to_send[i]>self.arm_max_vel):  
+                    action[i + 3] = self.arm_max_vel
+                else:
+                    action[i + 3] = actions_to_send[i]
 
         return action, arm_target_reached, arm_waypoint

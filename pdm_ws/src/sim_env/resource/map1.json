@@ -154,7 +154,7 @@
         "rgba": [1, 1, 0.0, 1.0],
         "movable": false,
         "geometry": {
-          "position": [17.0, -2.0, 1],
+          "position": [17.0, -2.0, 0.6],
           "width": 0.05,
           "height": 0.4,
           "length": 0.05
@@ -165,9 +165,9 @@
         "rgba": [0.5, 0.5, 0.0, 1.0],
         "movable": false,
         "geometry": {
-          "position": [17.0, -2.0, 0.4],
+          "position": [17.0, -2.0, 0.2],
           "width": 0.2,
-          "height": 0.8,
+          "height": 0.4,
           "length": 0.2
         }
       }

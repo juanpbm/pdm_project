@@ -158,7 +158,7 @@ class RRT:
                 if(self.No_obstacle(img,new_w,new_h)):
                     ok = True
 
-                    [closest, neighbor, cost] = self.GetClosestNeighbor(new_w,new_h,V_E,rad)                            # Get the closest neightbour to the point
+                    [closest, neight, cost] = self.GetClosestNeighbor(new_w,new_h,V_E,rad)                            # Get the closest neightbour to the point
 
                     # If it is a valid neighbor
                     if(closest.id != -1 and closest.child!=end):
