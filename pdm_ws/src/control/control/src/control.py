@@ -171,6 +171,9 @@ class Controller:
         desired_velocity_xyz = self.Kp*error_xyz 
         action_to_send = desired_velocity_xyz
 
+        self.e_prev_base = error_xyz
+        self.time_prev_base = base_waypoint
+
         if(base_target_waypoints[self.base_current_target_waypoint]>base_waypoint):
             base_waypoint+=1 
         elif((self.base_current_target_waypoint<(len(base_target_trajectory)-1) ) and 
@@ -320,6 +323,8 @@ class Controller:
         elif((self.arm_current_target_waypoint<len(arm_target_trajectory)-1 ) and 
                 (np.linalg.norm(arm_target_trajectory[self.arm_current_target_waypoint]-current_arm_joint_pos)<0.01)):
             self.arm_current_target_waypoint+=1
+
+
         elif((self.arm_current_target_waypoint==len(arm_target_trajectory)-1 ) and 
                 (np.linalg.norm(arm_target_trajectory[self.arm_current_target_waypoint]-current_arm_joint_pos)<0.01)):
             actions_to_send = np.zeros(self.n_actions)

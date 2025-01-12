@@ -170,7 +170,7 @@ def main(args=None):
                 last_state = control_node.state_
                 control_node.base_target_reached = False
                 control_node.pub_goal_reached()
-                
+
 
             if (control_node.ready_for_arm() and control_node.state_ in {1, 3, 4, 6} and control_node.state_ != last_state): # Depending on state
                 while (not control_node.arm_target_reached):
