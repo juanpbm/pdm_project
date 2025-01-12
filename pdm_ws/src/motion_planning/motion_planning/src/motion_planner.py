@@ -158,12 +158,12 @@ class RRT:
                 if(self.No_obstacle(img,new_w,new_h)):
                     ok = True
 
-                    [closest, neight, cost] = self.GetClosestNeighbor(new_w,new_h,V_E,rad)                            # Get the closest neightbour to the point
+                    [closest, neigh, cost] = self.GetClosestNeighbor(new_w,new_h,V_E,rad)                            # Get the closest neighbor to the point
 
                     # If it is a valid neighbor
                     if(closest.id != -1 and closest.child!=end):
-                        # If there is a clear line between the point and the closest neightbour
-                        if(self.ClearLine(new_w,new_h,closest,img) == True):
+                        # If there is a clear line between the point and the closest neighbor
+                        if(self.ClearLine(new_w,new_h,closest,img) == True and closest.child != end):
                             # Create and add the node to the list
                             if((new_w,new_h) == end):
                                 end_reached = True
@@ -173,15 +173,15 @@ class RRT:
 
                             image = cv.circle(image, (new_node.child[1], new_node.child[0]), 2, (0,255,0), -1)          # Draw the point on the image
 
-                            # Go through all the neightbours of the new node to update their costs if necessary
-                            for nei in neight:
+                            # Go through all the neighbors of the new node to update their costs if necessary
+                            for nei in neigh:
                                 # The cost will be updated if:
-                                #   - The cost of the neightbour is not None (not start point)
-                                #   - The new cost is smaller that the older cost of the neightbour
-                                #   - The new neightbour is  not the closest one
-                                #   - There is a clear line between the neightbour and the new node
+                                #   - The cost of the neighbor is not None (not start point)
+                                #   - The new cost is smaller that the older cost of the neighbor
+                                #   - The new neighbor is  not the closest one
+                                #   - There is a clear line between the neighbor and the new node
                                 if((nei.cost != None and cost + self.EuclideanDistance(new_node.child,nei.child) < nei.cost) and nei.id!=closest.id 
-                                and self.ClearLine(nei.child[0],nei.child[1],new_node,img) == True):
+                                and self.ClearLine(nei.child[0],nei.child[1],new_node,img) == True and nei.child != end):
                                     # Update the cost of the 
                                     V_E[nei.id].parent = new_node.child
                                     V_E[nei.id].cost = cost + self.EuclideanDistance(new_node.child, nei.child)

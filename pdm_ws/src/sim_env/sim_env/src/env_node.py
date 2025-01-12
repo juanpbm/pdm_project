@@ -42,7 +42,7 @@ class PandaEnvNode(Node):
         self.accelerations = []
         self.dist_time = []
         # TODO: what other information or topics are needed?
-        print("panda env Node has been created.")
+        self.get_logger().info('panda env Node has been created.')
 
 
     def cmd_callback(self, msg):
@@ -197,7 +197,7 @@ def main(args=None):
         end_time = time.time() 
         execution_time = end_time - start_time
         print("Total time: " + str(np.round(execution_time,3)) + "s")
-        print("panda env Node has been shut down.")
+        panda_env_node.get_logger().info('panda env Node has been shut down.')
 
 if __name__ == "__main__":
     # Call Main Function

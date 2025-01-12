@@ -1,6 +1,5 @@
 import os
 import cv2 as cv
-import threading
 from geometry_msgs.msg import Point
 from motion_planning.src.motion_planner import RRT
 import numpy as np
