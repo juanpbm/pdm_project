@@ -66,8 +66,6 @@ class ControlNode(Node):
             self.base_trajectory = new_trajectory
             # Reset progress variables
             self.base_waypoint = 0
-            self.controller.e_prev_base=[0,0]
-            self.controller.time_prev_base=0
             self.controller.base_current_target_waypoint=0
             self.base_target_reached = False
             temp_trajectory_base=np.vstack((self.base_current_pos,self.base_trajectory))
@@ -91,8 +89,6 @@ class ControlNode(Node):
             self.arm_trajectory = new_trajectory
             # Reset progress variables
             self.arm_waypoint = 0
-            self.controller.e_prev_arm=[0,0,0]
-            self.controller.time_prev_arm=0
             self.controller.arm_current_target_waypoint=0
             self.arm_target_reached = False
             self.new_trajectory=True
