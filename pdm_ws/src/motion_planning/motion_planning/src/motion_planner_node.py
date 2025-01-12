@@ -53,7 +53,7 @@ class MotionPlannerNode(Node):
         self.get_logger().info("motion_planner Node has been created.")
 
     def map_callback(self, msg):
-        self.get_logger().info('Got Map in Motion Planning Node sub')
+        self.get_logger().debug('Got Map in Motion Planning Node sub')
 
         if (self.map is None):
             dims = msg.layout.dim
@@ -64,12 +64,12 @@ class MotionPlannerNode(Node):
             self.map = np.array(msg.data).reshape(shape)
         if(self.map_ready and self.base_trajectory.size == 0):
             self.base_trajectory = self.map_rrt()
-            self.get_logger().info('generated base_trajectory:"%s"' % self.base_trajectory)
+            self.get_logger().debug('generated base_trajectory:"%s"' % self.base_trajectory)
 
     def base_pos_callback(self, msg):    
         # Recover position information as a 1D array
         self.base_current_pos = np.array([msg.x, msg.y, msg.z], dtype=float)
-        self.get_logger().info('Got base pos in Control Node sub: "%s"' % self.base_current_pos)
+        self.get_logger().debug('Got base pos in Control Node sub: "%s"' % self.base_current_pos)
 
     # Get the new environment from the environment
     def new_state_callback(self, msg):
@@ -102,13 +102,15 @@ class MotionPlannerNode(Node):
         self.pub_trajectories()
 
     def goal_callback(self, msg):
-        self.get_logger().info('Got goal pos in motion planner:"%s"' % msg)
         if(self.base_current_pos.size != 0):
+            
             self.arm_goal = np.array([msg.x -self.base_current_pos[0], msg.y-self.base_current_pos[1], msg.z + 0.2], dtype=float)
+            self.get_logger().info('Arm goal position:"%s"' % self.arm_goal)
         self.base_goal = np.array([msg.x -0.6, msg.y, 0], dtype=float)
+        self.get_logger().info('Base goal position:"%s"'  % self.base_goal)
     
     def init_callback(self, msg):
-        self.get_logger().info('Got init pos in motion planner:"%s"' % msg)
+        self.get_logger().debug('Got init pos in motion planner:"%s"' % msg)
         self.init_pos = np.array([msg.x, msg.y, msg.z], dtype=int)
 
     def pub_trajectories(self):
@@ -122,7 +124,7 @@ class MotionPlannerNode(Node):
 
         # Publish base Trajectory 
         self.base_trajectory_publisher_.publish(base_msg)
-        self.get_logger().info('Published base_target_xyz:"%s"' % base_msg.data)
+        self.get_logger().debug('Published base_target_xyz:"%s"' % base_msg.data)
 
         # Create array message with the arm trajectory information
         arm_msg = Float64MultiArray()
@@ -134,7 +136,7 @@ class MotionPlannerNode(Node):
 
         # Publish arm trajectory
         self.arm_trajectory_publisher_.publish(arm_msg)
-        self.get_logger().info('Published arm_target_xyz:"%s"' % arm_msg.data)
+        self.get_logger().debug('Published arm_target_xyz:"%s"' % arm_msg.data)
 
     def map_rrt(self):
         image_array = self.map

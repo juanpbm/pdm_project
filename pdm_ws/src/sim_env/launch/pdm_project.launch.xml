@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="sim_env" exec="panda_env" name="panda_env" output="screen" args="--ros-args --log-level info"/>
+  <node pkg="motion_planning" exec="motion_planner" name="motion_planner" output="screen" args="--ros-args --log-level info"/>
+  <node pkg="control" exec="control" name="control" output="screen" args="--ros-args --log-level info"/>
+</launch>

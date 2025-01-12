@@ -37,7 +37,7 @@ class PandaEnvNode(Node):
     def cmd_callback(self, msg):
         # Turn message into np array
         action = np.array(msg.data)
-        self.get_logger().info('Got vel command in panda_env Node sub: "%s"' % action)
+        self.get_logger().debug('Got vel command in panda_env Node sub: "%s"' % action)
         # Call the function that moves the robot with the received action command
         self.panda_sym.move_panda(action)
 
@@ -53,6 +53,7 @@ class PandaEnvNode(Node):
         elif(self.state_ == 6):
             self.state_.data = 1
 
+        self.get_logger().info('Now in state "%s"' % self.state_.data)
     def pub_map(self):
         ob = self.panda_sym.Get_Ob()
         occupancy_map = np.array(ob['robot_0']['Occupancy'], dtype=np.float64)
@@ -71,7 +72,7 @@ class PandaEnvNode(Node):
 
         # Publish base Trajectory 
         self.map_publisher_.publish(map_msg)
-        self.get_logger().info('Published occupancy map')
+        self.get_logger().debug('Published occupancy map')
         # Publish state 1
         if(self.state_.data == 0):
             self.state_.data = 1
@@ -90,7 +91,7 @@ class PandaEnvNode(Node):
 
         # Publish current position
         self.base_pos_publisher_.publish(msg)
-        self.get_logger().info('Publishing base pos from panda_env Node: "%s"' % msg)
+        self.get_logger().debug('Publishing base pos from panda_env Node: "%s"' % msg)
     
     def pub_arm_pos(self):
         ob = self.panda_sym.Get_Ob()
@@ -101,7 +102,7 @@ class PandaEnvNode(Node):
         # Publish cmd_vel msg
         self.arm_pos_publisher_.publish(msg)
 
-        self.get_logger().info('Publishing arm pos from panda_env Node: "%s"' % msg.data)
+        self.get_logger().debug('Publishing arm pos from panda_env Node: "%s"' % msg.data)
 
     def pub_goal_pos(self):
         # Get the current position of the robot
@@ -114,7 +115,7 @@ class PandaEnvNode(Node):
         msg.z = goal_pos[2]
         # Publish current position
         self.goal_pos_publisher_.publish(msg)
-        self.get_logger().info('Publishing goal pos from panda_env Node: "%s"' % msg)
+        self.get_logger().debug('Publishing goal pos from panda_env Node: "%s"' % msg)
 
     def pub_init_pos(self):
         # Get the current position of the robot
@@ -127,7 +128,7 @@ class PandaEnvNode(Node):
         msg.z = init_pos[2]
         # Publish current position
         self.init_pos_publisher_.publish(msg)
-        self.get_logger().info('Publishing init pos from panda_env Node: "%s"' % msg)
+        self.get_logger().debug('Publishing init pos from panda_env Node: "%s"' % msg)
 
     #Functions that use the env class
     
