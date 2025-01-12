@@ -3,7 +3,7 @@ import pickle
 import os
 from ament_index_python.packages import get_package_share_directory
 
-
+# Custom class to receive the data of the robot from the pickle files and convert it into a similar format as what URDF had
 class custom_URDF:
     def __init__(self,origin=np.identity(4),axis=np.zeros(3)):
       self.origin=origin
@@ -29,41 +29,42 @@ class Controller:
         self.arm_current_target_waypoint=0
         self.base_current_target_waypoint=0
 
-        # path to pickle files containing arm information
+        # Path to pickle files containing the relevant Arm information
         file_path_axis = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_axis.pickle')
         file_path_origin = os.path.join(os.path.dirname(get_package_share_directory('control')), 'control', 'resource', 'joints_origin.pickle')
 
-        # Load Arm information
+        # Load Arm information, first create empty variables 
         joints_class = custom_URDF()
         joints_class.create_list()
 
         with open(file_path_origin, 'rb') as file:
-            # Load the joint origin data
+            # Load the joint origin (position) data
             joints_origin_list_loaded = pickle.load(file)
 
         with open(file_path_axis, 'rb') as file:
-            # Load the joints axis data
+            # Load the joints axis (axis that is affecting) data
             joints_axis_list_loaded = pickle.load(file)
 
-        # Combine joints data
+        # Combine joints data into custom class
         for x in range(len(joints_origin_list_loaded)):
             joint_temp = custom_URDF(joints_origin_list_loaded[x],joints_axis_list_loaded[x])
             joints_class.add_joint(joint_temp)
 
+        # Get the joints data into a list
         self.joints_list = joints_class.get_joints()
 
     def cubic_spline_interpolation(self,via_points,V_max, desired_dt):
         
-        # Extract x, y, and z coordinates of via-points
+        # Extract x, y, and z coordinates of the target points sent in via_points
         x = via_points[:, 0]
         y = via_points[:, 1]
         z = via_points[:, 2]
         n = len(x)
 
-        # Calculate distances between via-points
+        # Calculate distances between via_points
         distances = np.sqrt(np.diff(x)**2 + np.diff(y)**2 + np.diff(z)**2)
 
-        # Calculate minimum time intervals based on maximum velocity
+        # Calculate minimum time intervals based on maximum velocity sent
         min_time_intervals = distances / V_max
 
         # Ensure cumulative time intervals
@@ -73,7 +74,7 @@ class Controller:
         # Step lengths in time
         h = np.diff(times)
 
-        # Solve for the coefficients of the cubic spline
+        # Intialize the coefficients of the cubic spline
         A = np.zeros((n, n))
         bx = np.zeros(n)
         by = np.zeros(n)
@@ -142,9 +143,12 @@ class Controller:
                     coordinates_trajectory.append([x_new[j], y_new[j], z_new[j]])
 
         coordinates_trajectory=np.array(coordinates_trajectory)
+
+        # Initialize array of index of waypoints where the new cubic splines go through the via_points 
         target_waypoints=np.zeros(len(via_points)-1)
         b=0
         
+        # For each via_points, store where, as in index, the cubic spline passes through each corresponfing via_points
         if (len(target_waypoints)>1):
             for a in range(len(coordinates_trajectory)):
                 if(b<(len(via_points)-1)):
@@ -153,6 +157,7 @@ class Controller:
                         b+=1
             target_waypoints=np.array(target_waypoints)
         else: 
+            # If only 1 via_point (apart from the inital position) was passed, select the length minus  
             target_waypoints=np.array([len(coordinates_trajectory)-1])
         return coordinates_trajectory, target_waypoints
 
@@ -182,7 +187,7 @@ class Controller:
                 (abs(base_target_trajectory[self.base_current_target_waypoint][1]-current_xyz[1])<0.03)):
             # If all waypoints have been reached stop the base and update the target reached variable
             action_to_send = [0,0,0]
-            base_target_reached = True # TODO: Publish this in case other pkgs need it to continue 
+            base_target_reached = True 
             
         for i in range(len(action_to_send)):
                 if action_to_send[i] > self.base_max_vel:
@@ -289,7 +294,7 @@ class Controller:
         # Get current position and trajectory
         current_arm_joint_pos, current_orientation = self.compute_forward_kinematics(self.joints_list, arm_current_pos)
         
-        target_orientation = np.array([ 3.14, -0.37,  0.  ]) # Euler Angles TODO: where would this come from. 
+        target_orientation = np.array([ 3.14, -0.37,  0.  ]) # Euler Angles 
         actions_to_send = np.zeros(self.n_actions)
 
             
@@ -323,7 +328,7 @@ class Controller:
         elif((self.arm_current_target_waypoint==len(arm_target_trajectory)-1 ) and 
                 (np.linalg.norm(arm_target_trajectory[self.arm_current_target_waypoint]-current_arm_joint_pos)<0.01)):
             actions_to_send = np.zeros(self.n_actions)
-            arm_target_reached = True # TODO: Publish this in case other pkgs need it to continue   
+            arm_target_reached = True    
 
             
             
