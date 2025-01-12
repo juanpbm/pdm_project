@@ -12,6 +12,8 @@
 ## Description
 This Code contains the code for the final project of Planning and Decision Making RO47005. In this project, a simulation environment was created to simulate a warehouse. In this environment, a mobile manipulator had to find a viable path from a start position to a goal and back. This ROS2 workspace contains three packages to achieve this goal. The `sim_env` manages the simulation environment and state machine, `motion_planning` computes trajectories for the arm and the base, and `control` computes the velocities needed to achieve the goals. 
 
+The simulation environment used is the [gym_envs_urdf](https://github.com/maxspahn/gym_envs_urdf/tree/develop) by Max Spahn. This was added as a submodule in our repository and it is setup and installed by the colcon commands. 
+
 ## How to Run
 To run this workspace ROS2 Humble was used. After the setup bash has been sourced and an internet connection is available run the following commands:
 
