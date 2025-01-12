@@ -46,6 +46,7 @@ class ControlNode(Node):
         self.arm_trajectory = np.empty(0)
         self.base_target_reached = False
         self.arm_target_reached = False
+        self.new_trajectory = False
         self.base_waypoint = 0
         self.arm_waypoint = 0
         self.controller = Controller()
@@ -94,6 +95,7 @@ class ControlNode(Node):
             self.controller.time_prev_arm=0
             self.controller.arm_current_target_waypoint=0
             self.arm_target_reached = False
+            self.new_trajectory=True
             # Get current position and trajectory
             current_arm_joint_pos, _ = self.controller.compute_forward_kinematics(self.controller.joints_list, self.arm_current_pos)
             temp_trajectory_arm=np.vstack((current_arm_joint_pos,self.arm_trajectory))
@@ -132,7 +134,7 @@ class ControlNode(Node):
         # Construct the cmd_vel msg for the joints
         msg = Float64MultiArray()
         msg.data = action.astype(np.float64).tolist()
-
+        self.new_trajectory = False
         # Publish cmd_vel msg
         self.cmd_vel_publisher_.publish(msg)
         self.get_logger().info('Publishing arm actions from control Node: "%s"' % msg.data)
@@ -153,7 +155,7 @@ class ControlNode(Node):
     
     def ready_for_arm(self):
         # Make sure all the required information is available
-        return self.arm_current_pos.size != 0 and self.arm_trajectory.size != 0
+        return self.arm_current_pos.size != 0 and self.arm_trajectory.size != 0 and self.new_trajectory 
     
 def main(args=None):
     # start the control node

@@ -83,6 +83,7 @@ class MotionPlannerNode(Node):
         elif(self.state_ == 2):
             # same as in 1
             self.arm_trajectory = self.safe_arm_pos
+            # print("State 2")
 
         elif(self.state_ == 3):
             # goal position
@@ -91,7 +92,7 @@ class MotionPlannerNode(Node):
         elif(self.state_ == 4):
             # safe position
             # print("State 4")
-            #input(self.safe_arm_pos)
+            # input(self.safe_arm_pos)
             self.arm_trajectory = self.safe_arm_pos
 
         elif(self.state_ == 5):
