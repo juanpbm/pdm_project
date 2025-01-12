@@ -163,7 +163,7 @@ class RRT:
                     # If it is a valid neighbor
                     if(closest.id != -1 and closest.child!=end):
                         # If there is a clear line between the point and the closest neighbor
-                        if(self.ClearLine(new_w,new_h,closest,img) == True and closest.child != end):
+                        if(self.ClearLine(new_w,new_h,closest,img) == True):
                             # Create and add the node to the list
                             if((new_w,new_h) == end):
                                 end_reached = True
