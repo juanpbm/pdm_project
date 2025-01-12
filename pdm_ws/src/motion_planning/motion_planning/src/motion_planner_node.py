@@ -1,4 +1,6 @@
+import os
 import cv2 as cv
+import threading
 from geometry_msgs.msg import Point
 from motion_planning.src.motion_planner import RRT
 import numpy as np
@@ -7,6 +9,7 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray, MultiArrayDimension, Int32
 import matplotlib.pyplot as plt
+from ament_index_python.packages import get_package_share_directory
 
 class MotionPlannerNode(Node):
     def __init__(self):
@@ -217,10 +220,12 @@ class MotionPlannerNode(Node):
 
         message[-1][0]+=0.4
 
-        plt.imshow(img_print, cmap='gray')  # Use 'gray' colormap for grayscale images
-        plt.title("Grayscale Image")
+        img_path = os.path.join(os.path.dirname(get_package_share_directory('motion_planning')), 'motion_planning', 'resource', "RRT_star_result.png")
+        fig = plt.figure(figsize=(3, 3))
+        plt.imshow(img_print, cmap='gray')
+        plt.title("RRT* Result")
         plt.axis('off')
-        plt.show()
+        fig.savefig(img_path, dpi=fig.dpi)
        
         return np.array(message, dtype=float)
     

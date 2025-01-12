@@ -55,13 +55,14 @@ class PandaEnvNode(Node):
     def goal_reached_callback(self, msg):
         self.get_logger().info('Goal reached')
         # Set the new value of the state
-        if(self.state_.data < 6 and self.state_.data > 0):
+        if(self.state_.data <= 6 and self.state_.data > 0):
             self.state_.data += 1
             if(self.state_.data==3):
                 self.panda_sym.reset_robot_arm()
             self.state_publisher_.publish(self.state_)
-        elif(self.state_ == 6):
+        elif(self.state_ == 7):
             self.state_.data = 1
+
 
     def pub_map(self):
         ob = self.panda_sym.Get_Ob()
@@ -176,7 +177,7 @@ def main(args=None):
             panda_env_node.pub_base_pos()
             panda_env_node.pub_arm_pos()
             rclpy.spin_once(panda_env_node, timeout_sec=5)
-            if(panda_env_node.state_.data == 6):
+            if(panda_env_node.state_.data == 7):
                 break
 
     except (KeyboardInterrupt, ExternalShutdownException):
@@ -195,7 +196,7 @@ def main(args=None):
 
         end_time = time.time() 
         execution_time = end_time - start_time
-        print("Time: " + str(np.round(execution_time,3)) + "s")
+        print("Total time: " + str(np.round(execution_time,3)) + "s")
         print("panda env Node has been shut down.")
 
 if __name__ == "__main__":

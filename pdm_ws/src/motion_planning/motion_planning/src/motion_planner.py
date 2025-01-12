@@ -18,8 +18,8 @@ class Conex:
 
 class RRT:
     def __init__(self):
-        self.N_max = 5000                                                                                  # Maximum number of iterations
-        self.N = 2000
+        self.N_max = 1500                                                                                  # Maximum number of iterations
+        self.N = 1300
         self.gamma = 400                                                                                  # Gamma value for the algorithm
         self.d = 2                                                                                          # d value for the algorithm
 
