@@ -68,6 +68,7 @@ class ControlNode(Node):
             self.base_waypoint = 0
             self.controller.base_current_target_waypoint=0
             self.base_target_reached = False
+            # Add the current position to the trajectory sent to the cubic polynomial planner
             temp_trajectory_base=np.vstack((self.base_current_pos,self.base_trajectory))
             self.base_trajectory_cubic,self.base_target_waypoints = self.controller.cubic_spline_interpolation(temp_trajectory_base,self.controller.base_max_vel, 0.01)
             self.get_logger().debug('Got base trajectory in Control Node sub: "%s"' % self.base_trajectory_cubic)
@@ -92,8 +93,9 @@ class ControlNode(Node):
             self.controller.arm_current_target_waypoint=0
             self.arm_target_reached = False
             self.new_trajectory=True
-            # Get current position and trajectory
+            # Compute the current position of the arm end-effector
             current_arm_joint_pos, _ = self.controller.compute_forward_kinematics(self.controller.joints_list, self.arm_current_pos)
+            # Add the current position to the trajectory sent to the cubic polynomial planner
             temp_trajectory_arm=np.vstack((current_arm_joint_pos,self.arm_trajectory))
             self.arm_trajectory_cubic, self.arm_target_waypoints=self.controller.cubic_spline_interpolation(temp_trajectory_arm,self.controller.arm_max_vel, 0.01)
             self.get_logger().debug('Got arm trajectory in Control Node arm sub: "%s"' % self.arm_trajectory_cubic)

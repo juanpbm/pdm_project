@@ -57,10 +57,12 @@ class PandaEnvNode(Node):
         # Set the new value of the state
         if(self.state_.data <= 6 and self.state_.data > 0):
             self.state_.data += 1
-            if(self.state_.data==3):
+            # During the trajectory of the base the arm moves without any input, do a reset at states 3 and 6 (after a base translation)
+            if(self.state_.data==3 or self.state_.data==6):
                 self.panda_sym.reset_robot_arm()
             self.state_publisher_.publish(self.state_)
         elif(self.state_ == 7):
+            # Start again the state machine
             self.state_.data = 1
 
         self.get_logger().info('Now in state "%s"' % self.state_.data)
@@ -95,6 +97,7 @@ class PandaEnvNode(Node):
         
         # Create Point msg
         msg = Point()
+        # The initial position of the robot is added to an offset due to it's spawning position changing with the reset method
         msg.x = current_xyz[0] + self.panda_sym.init_pos[0]
         msg.y = current_xyz[1] + self.panda_sym.init_pos[1]
         msg.z = current_xyz[2] + self.panda_sym.init_pos[2]
@@ -104,6 +107,7 @@ class PandaEnvNode(Node):
         self.get_logger().debug('Publishing base pos from panda_env Node: "%s"' % msg)
         if(self.first == False):
             self.end_acc_time = time.time()
+            # Get the initial position and velocity of the base
             self.position_xyz =  np.round(ob['robot_0']['joint_state']['position'][:3],4)
             self.velocity_xyz = np.round(ob['robot_0']['joint_state']['velocity'][:3],4)
             if(np.round(np.linalg.norm(self.velocity_xyz)) > 0 and np.round(np.linalg.norm(self.prev_vel) > 0)):
@@ -127,6 +131,7 @@ class PandaEnvNode(Node):
     
     def pub_arm_pos(self):
         ob = self.panda_sym.Get_Ob()
+        # Get the initial position of the joints of the arm, excluding the gripper
         current_joint_pos = np.round(ob['robot_0']['joint_state']['position'][3:-2],4)
         msg = Float64MultiArray()
         msg.data = current_joint_pos.astype(np.float64).tolist()

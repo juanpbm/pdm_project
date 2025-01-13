@@ -79,26 +79,25 @@ class MotionPlannerNode(Node):
         if(self.state_ == 1):
             while(self.base_trajectory == np.empty(0)):
                 return
-            # safe position
+            # Safe position
             self.arm_trajectory = self.safe_arm_pos
 
 
         elif(self.state_ == 3):
-            # goal position
-
-            # Add the offset as a new row to the trajectory
+            # Arm goal position plus a intermidiate position to make the trajectory safer
             self.arm_trajectory = np.vstack([np.array([0.32, 0, 0.6], dtype=float), np.array([self.arm_goal],dtype=float)])
 
         elif(self.state_ == 4):
-            # safe position
+            # Safe position
             self.arm_trajectory = self.safe_arm_pos
 
         elif(self.state_ == 5):
+            # Inverse of the initial trajectory to return to the initial base position
             self.base_trajectory = self.base_trajectory[::-1]
             self.arm_trajectory = self.safe_arm_pos
 
         elif(self.state_ == 6):
-            # drop position
+            # Drop position
             self.arm_trajectory = np.array([[0.4, 0, 0.1]])
 
         self.pub_trajectories()
@@ -208,12 +207,14 @@ class MotionPlannerNode(Node):
             if(i == 0):
                 message.append([(V_E_shortest_smoothed[j].child[1]/10), -V_E_shortest_smoothed[j].child[0]/10, 0])
 
+            # For each pair of RRT points that we know no obstacles exist between them get intermidiate points between them
             points=np.linspace(np.array([V_E_shortest_smoothed[j].child[1]/10, -V_E_shortest_smoothed[j].child[0]/10, 0]),np.array([V_E_shortest_smoothed[j-1].child[1]/10, -V_E_shortest_smoothed[j-1].child[0]/10, 0]),num=22)
             message.extend([point.tolist() for point in points[1:]])
                 
             j = j-1
 
-            img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  # Smoothed path in yellow
+            # Smoothed path in yellow
+            img_print = cv.line(img_print, (p1[1], p1[0]), (p2[1], p2[0]), (0, 0, 255), 2)  
 
         message[-1][0]+=0.4
 
@@ -227,11 +228,11 @@ class MotionPlannerNode(Node):
         return np.array(message, dtype=float)
     
     def map_ready(self):
-        # make sure that the map and positions are ready
+        # Make sure that the map and positions are ready
         return self.map is not None and self.base_goal.size != 0 and self.init_pos.size != 0
     
 def main(args=None):
-    # start the motion planning node
+    # Start the motion planning node
     try:
         rclpy.init(args=args)
         motion_planner_node = MotionPlannerNode()

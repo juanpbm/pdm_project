@@ -190,7 +190,10 @@ class Panda_Sym:
         self.ob, *_ = self.env.step(action)
 
     def reset_robot_arm(self):
+        # Reset of the robot arm to fix randomg movements during the trajectory of the base
+         # The initial position has to be set again to correctly move the base
         self.init_pos = (self.init_pos+np.round(self.ob['robot_0']['joint_state']['position'][:3],4)).astype(float)
         init_vel = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
+         # Reset of the initial position of the joints to a safe position
         init_arm_pos = np.array([0,0,0,0,0,0,-3.0,0.0,3.4,0,0,0])
         self.ob, _ = self.env.reset( mount_positions=np.array([self.init_pos]), pos=init_arm_pos,vel=init_vel)
